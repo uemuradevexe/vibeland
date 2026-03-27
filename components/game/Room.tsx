@@ -1,5 +1,43 @@
 'use client'
 
+import { useGameStore } from '@/store/gameStore'
+import PlazaRoom from '@/components/rooms/PlazaRoom'
+import CafeRoom from '@/components/rooms/CafeRoom'
+import BeachRoom from '@/components/rooms/BeachRoom'
+import LibraryRoom from '@/components/rooms/LibraryRoom'
+import ClaudeOrb from './ClaudeOrb'
+import NPCManager from './NPCManager'
+
+const ROOM_COMPONENTS = {
+  plaza: PlazaRoom,
+  cafe: CafeRoom,
+  beach: BeachRoom,
+  library: LibraryRoom,
+}
+
 export default function Room() {
-  return null
+  const currentRoom = useGameStore((s) => s.currentRoom)
+  const playerX = useGameStore((s) => s.playerX)
+  const playerColor = useGameStore((s) => s.playerColor)
+  const playerName = useGameStore((s) => s.playerName)
+  const playerChat = useGameStore((s) => s.playerChat)
+  const playerEmote = useGameStore((s) => s.playerEmote)
+
+  const RoomComponent = ROOM_COMPONENTS[currentRoom]
+
+  return (
+    <>
+      <RoomComponent />
+      <NPCManager />
+      <ClaudeOrb
+        x={playerX}
+        y={-1.2}
+        color={playerColor}
+        name={playerName || 'você'}
+        chat={playerChat}
+        emote={playerEmote}
+        isPlayer
+      />
+    </>
+  )
 }
