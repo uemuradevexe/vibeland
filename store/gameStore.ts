@@ -79,10 +79,21 @@ export const useGameStore = create<GameState>((set) => ({
   tickGame: (delta) => set((state) => {
     const colliders = ROOMS[state.currentRoom].colliders
 
+    const PLAYER_SPEED = 5   // units per second
+    const NPC_SPEED    = 2.5 // units per second
+
     const dx = state.playerTargetX - state.playerX
     const dz = state.playerTargetZ - state.playerZ
-    let newX = Math.abs(dx) < 0.05 ? state.playerTargetX : state.playerX + dx * Math.min(delta * 3, 1)
-    let newZ = Math.abs(dz) < 0.05 ? state.playerTargetZ : state.playerZ + dz * Math.min(delta * 3, 1)
+    const playerDist = Math.sqrt(dx * dx + dz * dz)
+    let newX: number, newZ: number
+    if (playerDist < 0.05) {
+      newX = state.playerTargetX
+      newZ = state.playerTargetZ
+    } else {
+      const step = Math.min(PLAYER_SPEED * delta, playerDist)
+      newX = state.playerX + (dx / playerDist) * step
+      newZ = state.playerZ + (dz / playerDist) * step
+    }
     ;[newX, newZ] = resolvePosition(newX, newZ, colliders)
 
     const playerChatTimer = Math.max(0, state.playerChatTimer - delta)
@@ -91,8 +102,16 @@ export const useGameStore = create<GameState>((set) => ({
     const npcs = state.npcs.map((npc) => {
       const ndx = npc.targetX - npc.x
       const ndz = npc.targetZ - npc.z
-      let nx = Math.abs(ndx) < 0.05 ? npc.targetX : npc.x + ndx * Math.min(delta * 2, 1)
-      let nz = Math.abs(ndz) < 0.05 ? npc.targetZ : npc.z + ndz * Math.min(delta * 2, 1)
+      const npcDist = Math.sqrt(ndx * ndx + ndz * ndz)
+      let nx: number, nz: number
+      if (npcDist < 0.05) {
+        nx = npc.targetX
+        nz = npc.targetZ
+      } else {
+        const step = Math.min(NPC_SPEED * delta, npcDist)
+        nx = npc.x + (ndx / npcDist) * step
+        nz = npc.z + (ndz / npcDist) * step
+      }
       ;[nx, nz] = resolvePosition(nx, nz, colliders)
 
       const phraseTimer = Math.max(0, npc.phraseTimer - delta)
