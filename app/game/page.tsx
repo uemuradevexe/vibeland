@@ -1,3 +1,19 @@
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useGameStore } from '@/store/gameStore'
+import GameCanvas from '@/components/game/GameCanvas'
+
 export default function GamePage() {
-  return <div className="w-screen h-screen bg-[#0d1b2a] flex items-center justify-center text-white">Carregando...</div>
+  const playerName = useGameStore((s) => s.playerName)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!playerName) router.replace('/')
+  }, [playerName, router])
+
+  if (!playerName) return null
+
+  return <GameCanvas />
 }
