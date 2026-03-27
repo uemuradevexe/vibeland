@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useGameStore } from '@/store/gameStore'
 import PlazaRoom from '@/components/rooms/PlazaRoom'
 import CafeRoom from '@/components/rooms/CafeRoom'
@@ -22,8 +23,13 @@ export default function Room() {
   const playerZ = useGameStore((s) => s.playerZ)
   const playerColor = useGameStore((s) => s.playerColor)
   const playerName = useGameStore((s) => s.playerName)
-  const playerChat = useGameStore((s) => s.playerChat)
-  const playerEmote = useGameStore((s) => s.playerEmote)
+  const playerChat    = useGameStore((s) => s.playerChat)
+  const playerEmote   = useGameStore((s) => s.playerEmote)
+  const playerHat     = useGameStore((s) => s.playerHat)
+  const playerVehicle = useGameStore((s) => s.playerVehicle)
+  const initPlayer    = useGameStore((s) => s.initPlayer)
+
+  useEffect(() => { initPlayer() }, [initPlayer])
 
   const RoomComponent = ROOM_COMPONENTS[currentRoom]
 
@@ -39,6 +45,8 @@ export default function Room() {
         name={playerName || 'você'}
         chat={playerChat}
         emote={playerEmote}
+        hat={playerHat}
+        vehicle={playerVehicle}
         isPlayer
       />
     </>
