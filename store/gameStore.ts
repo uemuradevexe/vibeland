@@ -1,6 +1,12 @@
 import { create } from 'zustand'
 import { ROOMS, type RoomId } from '@/lib/roomConfig'
 import { resolvePosition } from '@/lib/collision'
+import type { HatId, VehicleId } from '@/lib/skins'
+import {
+  loadTokens, saveTokens, claimDailyBonus,
+  loadEquipped, saveEquipped,
+  loadInventory, saveInventory,
+} from '@/lib/tokenStore'
 
 export interface NPC {
   id: string
@@ -12,6 +18,19 @@ export interface NPC {
   phrase: string | null
   phraseTimer: number
   wanderTimer: number
+}
+
+export interface RemotePlayer {
+  id: string
+  name: string
+  color: string
+  x: number
+  z: number
+  room: RoomId
+  chat: string | null
+  chatTimer: number
+  emote: string | null
+  emoteTimer: number
 }
 
 export interface GameState {
@@ -27,9 +46,19 @@ export interface GameState {
   playerEmote: string | null
   playerEmoteTimer: number
 
+  // Cosmetics
+  playerHat: HatId
+  playerVehicle: VehicleId
+  tokens: number
+  inventory: string[]
+  dailyBonusPending: number
+
   // World
   currentRoom: RoomId
   npcs: NPC[]
+
+  // Multiplayer
+  remotePlayers: Record<string, RemotePlayer>
 
   // Actions
   setPlayer: (name: string, color: string) => void
@@ -40,6 +69,18 @@ export interface GameState {
   changeRoom: (room: RoomId) => void
   setNPCs: (npcs: NPC[]) => void
   tickGame: (delta: number) => void
+
+  // Multiplayer actions
+  setRemotePlayers: (players: RemotePlayer[]) => void
+  upsertRemotePlayer: (partial: Partial<RemotePlayer> & { id: string }) => void
+  removeRemotePlayer: (id: string) => void
+
+  // Skins & tokens
+  equipHat: (hat: HatId) => void
+  equipVehicle: (vehicle: VehicleId) => void
+  buyItem: (itemId: string, cost: number) => boolean
+  initPlayer: () => void
+  dismissDailyBonus: () => void
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -55,6 +96,7 @@ export const useGameStore = create<GameState>((set) => ({
   playerEmoteTimer: 0,
   currentRoom: 'plaza',
   npcs: [],
+  remotePlayers: {},
 
   setPlayer: (name, color) => set({ playerName: name, playerColor: color }),
   setPlayerColor: (color) => set({ playerColor: color }),
@@ -72,16 +114,45 @@ export const useGameStore = create<GameState>((set) => ({
     npcs: [],
     playerChat: null,
     playerEmote: null,
+    remotePlayers: {},
   }),
 
   setNPCs: (npcs) => set({ npcs }),
 
+  // Multiplayer
+  setRemotePlayers: (players) => set({
+    remotePlayers: Object.fromEntries(
+      players.map((p) => [p.id, { ...p, chatTimer: 0, emoteTimer: 0 }])
+    ),
+  }),
+
+  upsertRemotePlayer: (partial) => set((state) => {
+    const existing = state.remotePlayers[partial.id] ?? {
+      id: partial.id, name: '?', color: '#888', x: 0, z: 0,
+      room: state.currentRoom, chat: null, chatTimer: 0, emote: null, emoteTimer: 0,
+    } as RemotePlayer
+    const updated: RemotePlayer = {
+      ...existing,
+      ...partial,
+      chatTimer:  partial.chatTimer  !== undefined ? partial.chatTimer  : existing.chatTimer,
+      emoteTimer: partial.emoteTimer !== undefined ? partial.emoteTimer : existing.emoteTimer,
+    }
+    return { remotePlayers: { ...state.remotePlayers, [partial.id]: updated } }
+  }),
+
+  removeRemotePlayer: (id) => set((state) => {
+    const next = { ...state.remotePlayers }
+    delete next[id]
+    return { remotePlayers: next }
+  }),
+
   tickGame: (delta) => set((state) => {
     const colliders = ROOMS[state.currentRoom].colliders
 
-    const PLAYER_SPEED = 5   // units per second
-    const NPC_SPEED    = 2.5 // units per second
+    const PLAYER_SPEED = 5
+    const NPC_SPEED    = 2.5
 
+    // ── Player movement ─────────────────────────────────────────────────
     const dx = state.playerTargetX - state.playerX
     const dz = state.playerTargetZ - state.playerZ
     const playerDist = Math.sqrt(dx * dx + dz * dz)
@@ -96,9 +167,10 @@ export const useGameStore = create<GameState>((set) => ({
     }
     ;[newX, newZ] = resolvePosition(newX, newZ, colliders)
 
-    const playerChatTimer = Math.max(0, state.playerChatTimer - delta)
+    const playerChatTimer  = Math.max(0, state.playerChatTimer  - delta)
     const playerEmoteTimer = Math.max(0, state.playerEmoteTimer - delta)
 
+    // ── NPC movement ────────────────────────────────────────────────────
     const npcs = state.npcs.map((npc) => {
       const ndx = npc.targetX - npc.x
       const ndz = npc.targetZ - npc.z
@@ -118,7 +190,6 @@ export const useGameStore = create<GameState>((set) => ({
       let wanderTimer = npc.wanderTimer - delta
       let targetX = npc.targetX
       let targetZ = npc.targetZ
-      const phrase = phraseTimer > 0 ? npc.phrase : null
 
       if (wanderTimer <= 0) {
         let wx = (Math.random() - 0.5) * 28
@@ -129,17 +200,32 @@ export const useGameStore = create<GameState>((set) => ({
         wanderTimer = 4 + Math.random() * 6
       }
 
-      return { ...npc, x: nx, z: nz, targetX, targetZ, phraseTimer, wanderTimer, phrase }
+      return { ...npc, x: nx, z: nz, targetX, targetZ, phraseTimer, wanderTimer, phrase: phraseTimer > 0 ? npc.phrase : null }
     })
+
+    // ── Remote player timers ────────────────────────────────────────────
+    const remotePlayers: Record<string, RemotePlayer> = {}
+    for (const [id, rp] of Object.entries(state.remotePlayers)) {
+      const chatTimer  = Math.max(0, rp.chatTimer  - delta)
+      const emoteTimer = Math.max(0, rp.emoteTimer - delta)
+      remotePlayers[id] = {
+        ...rp,
+        chat:  chatTimer  > 0 ? rp.chat  : null,
+        chatTimer,
+        emote: emoteTimer > 0 ? rp.emote : null,
+        emoteTimer,
+      }
+    }
 
     return {
       playerX: newX,
       playerZ: newZ,
-      playerChat: playerChatTimer > 0 ? state.playerChat : null,
+      playerChat:  playerChatTimer  > 0 ? state.playerChat  : null,
       playerChatTimer,
       playerEmote: playerEmoteTimer > 0 ? state.playerEmote : null,
       playerEmoteTimer,
       npcs,
+      remotePlayers,
     }
   }),
 }))

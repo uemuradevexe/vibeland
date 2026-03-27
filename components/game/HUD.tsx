@@ -19,7 +19,9 @@ export default function HUD() {
   const setPlayerColor = useGameStore((s) => s.setPlayerColor)
   const currentRoom = useGameStore((s) => s.currentRoom)
   const changeRoom = useGameStore((s) => s.changeRoom)
-  const playerName = useGameStore((s) => s.playerName)
+  const playerName    = useGameStore((s) => s.playerName)
+  const remotePlayers = useGameStore((s) => s.remotePlayers)
+  const onlineCount   = Object.keys(remotePlayers).length + 1   // +1 = self
 
   function handleSendChat() {
     if (!chatInput.trim()) return
@@ -36,6 +38,8 @@ export default function HUD() {
           {ROOMS[currentRoom].emoji} {ROOMS[currentRoom].name}
           <span className="ml-3 text-[#3d6db5]">·</span>
           <span className="ml-3 text-[#5a7aa8] text-xs">{playerName}</span>
+          <span className="ml-3 text-[#3d6db5]">·</span>
+          <span className="ml-2 text-[#5a9a58] text-xs">🟢 {onlineCount}</span>
         </div>
       </div>
 

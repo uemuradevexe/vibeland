@@ -7,6 +7,7 @@ import BeachRoom from '@/components/rooms/BeachRoom'
 import LibraryRoom from '@/components/rooms/LibraryRoom'
 import ClaudeOrb from './ClaudeOrb'
 import NPCManager from './NPCManager'
+import RemotePlayers from './RemotePlayers'
 
 const ROOM_COMPONENTS = {
   plaza: PlazaRoom,
@@ -30,6 +31,7 @@ export default function Room() {
     <>
       <RoomComponent />
       <NPCManager />
+      <RemotePlayers />
       <ClaudeOrb
         x={playerX}
         z={playerZ}
