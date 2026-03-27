@@ -7,7 +7,7 @@ import * as THREE from 'three'
 
 interface ClaudeOrbProps {
   x: number
-  y?: number
+  z?: number
   color: string
   name: string
   chat?: string | null
@@ -15,21 +15,22 @@ interface ClaudeOrbProps {
   isPlayer?: boolean
 }
 
-export default function ClaudeOrb({ x, y = 0, color, name, chat, emote, isPlayer }: ClaudeOrbProps) {
+const BASE_Y = 0.55
+
+export default function ClaudeOrb({ x, z = 0, color, name, chat, emote, isPlayer }: ClaudeOrbProps) {
   const groupRef = useRef<THREE.Group>(null)
   const floatOffset = useRef(Math.random() * Math.PI * 2)
 
-  // Animate the whole group so eyes + particles + labels all float together
   useFrame(({ clock }) => {
     if (!groupRef.current) return
-    groupRef.current.position.y = y + Math.sin(clock.elapsedTime * 1.5 + floatOffset.current) * 0.12
+    groupRef.current.position.y = BASE_Y + Math.sin(clock.elapsedTime * 1.5 + floatOffset.current) * 0.12
   })
 
   const radius = isPlayer ? 0.45 : 0.38
 
   return (
-    <group ref={groupRef} position={[x, y, 0]}>
-      {/* Glow outer sphere */}
+    <group ref={groupRef} position={[x, BASE_Y, z]}>
+      {/* Glow halo */}
       <Sphere args={[radius * 1.6, 16, 16]}>
         <meshStandardMaterial
           color={color}
@@ -51,11 +52,11 @@ export default function ClaudeOrb({ x, y = 0, color, name, chat, emote, isPlayer
         />
       </Sphere>
 
-      {/* Eyes — local coords (0,0,0 = orb center) */}
-      <Sphere args={[0.06, 8, 8]} position={[-0.13, 0.08, radius * 0.9]}>
+      {/* Eyes — facing toward camera (+X+Z diagonal) */}
+      <Sphere args={[0.06, 8, 8]} position={[-0.10, 0.08, radius * 0.85]}>
         <meshStandardMaterial color="#1a0a00" />
       </Sphere>
-      <Sphere args={[0.06, 8, 8]} position={[0.13, 0.08, radius * 0.9]}>
+      <Sphere args={[0.06, 8, 8]} position={[0.10, 0.08, radius * 0.85]}>
         <meshStandardMaterial color="#1a0a00" />
       </Sphere>
 
@@ -68,15 +69,15 @@ export default function ClaudeOrb({ x, y = 0, color, name, chat, emote, isPlayer
         </Sphere>
       ))}
 
-      {/* Ground shadow */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -radius - 0.05, 0]} scale={[1, 0.5, 1]}>
-        <circleGeometry args={[radius * 0.8, 16]} />
-        <meshStandardMaterial color="#000000" transparent opacity={0.3} />
+      {/* Ground shadow — stays near y=0 in local coords */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -BASE_Y + 0.02, 0]}>
+        <circleGeometry args={[radius * 0.9, 16]} />
+        <meshStandardMaterial color="#000000" transparent opacity={0.25} />
       </mesh>
 
       {/* Name tag */}
       <Html
-        position={[0, -radius - 0.35, 0]}
+        position={[0, radius + 0.55, 0]}
         center
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
@@ -98,7 +99,7 @@ export default function ClaudeOrb({ x, y = 0, color, name, chat, emote, isPlayer
 
       {/* Chat bubble */}
       {chat && (
-        <Html position={[0, radius + 0.5, 0]} center style={{ pointerEvents: 'none' }}>
+        <Html position={[0, radius + 1.0, 0]} center style={{ pointerEvents: 'none' }}>
           <div
             style={{
               background: 'white',
@@ -133,7 +134,7 @@ export default function ClaudeOrb({ x, y = 0, color, name, chat, emote, isPlayer
 
       {/* Emote */}
       {emote && (
-        <Html position={[0.5, radius + 0.3, 0]} center style={{ pointerEvents: 'none' }}>
+        <Html position={[0.5, radius + 0.7, 0]} center style={{ pointerEvents: 'none' }}>
           <div style={{ fontSize: 20, animation: 'floatUp 2s ease-out forwards' }}>
             {emote}
           </div>

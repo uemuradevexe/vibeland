@@ -15,23 +15,26 @@ export default function NPCManager() {
   const tickGame = useGameStore((s) => s.tickGame)
   const initialized = useRef(false)
 
-  // Initialize NPCs when room changes
   useEffect(() => {
     const room = ROOMS[currentRoom]
-    const newNpcs: NPC[] = room.npcColors.slice(0, room.npcCount).map((color, i) => ({
-      id: `npc_${currentRoom}_${i}`,
-      color,
-      x: (i - Math.floor(room.npcCount / 2)) * 3,
-      targetX: (i - Math.floor(room.npcCount / 2)) * 3,
-      phrase: null,
-      phraseTimer: 0,
-      wanderTimer: Math.random() * 3,
-    }))
+    const newNpcs: NPC[] = room.npcColors.slice(0, room.npcCount).map((color, i) => {
+      const angle = (i / room.npcCount) * Math.PI * 2
+      return {
+        id: `npc_${currentRoom}_${i}`,
+        color,
+        x: Math.cos(angle) * 3,
+        z: Math.sin(angle) * 3,
+        targetX: Math.cos(angle) * 3,
+        targetZ: Math.sin(angle) * 3,
+        phrase: null,
+        phraseTimer: 0,
+        wanderTimer: Math.random() * 3,
+      }
+    })
     setNPCs(newNpcs)
     initialized.current = true
   }, [currentRoom, setNPCs])
 
-  // Periodically give NPCs a phrase
   useEffect(() => {
     const interval = setInterval(() => {
       const store = useGameStore.getState()
@@ -46,7 +49,6 @@ export default function NPCManager() {
     return () => clearInterval(interval)
   }, [setNPCs])
 
-  // Drive game tick every frame
   useFrame((_, delta) => {
     tickGame(Math.min(delta, 0.1))
   })
@@ -57,7 +59,7 @@ export default function NPCManager() {
         <ClaudeOrb
           key={npc.id}
           x={npc.x}
-          y={-1.2}
+          z={npc.z}
           color={npc.color}
           name={`npc_00${i + 1}`}
           chat={npc.phrase}

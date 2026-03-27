@@ -18,6 +18,7 @@ const ROOM_COMPONENTS = {
 export default function Room() {
   const currentRoom = useGameStore((s) => s.currentRoom)
   const playerX = useGameStore((s) => s.playerX)
+  const playerZ = useGameStore((s) => s.playerZ)
   const playerColor = useGameStore((s) => s.playerColor)
   const playerName = useGameStore((s) => s.playerName)
   const playerChat = useGameStore((s) => s.playerChat)
@@ -31,7 +32,7 @@ export default function Room() {
       <NPCManager />
       <ClaudeOrb
         x={playerX}
-        y={-1.2}
+        z={playerZ}
         color={playerColor}
         name={playerName || 'você'}
         chat={playerChat}
