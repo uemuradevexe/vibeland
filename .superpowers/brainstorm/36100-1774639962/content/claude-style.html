@@ -1,0 +1,96 @@
+<h2>Como vai ser o Claude personagem?</h2>
+<p class="subtitle">Estilo visual + o que o jogador pode fazer</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;display:flex;align-items:center;justify-content:center;height:170px;border-radius:8px;">
+      <svg width="200" height="150" viewBox="0 0 200 150">
+        <!-- Room background -->
+        <rect x="0" y="80" width="200" height="70" fill="#1e3a5f"/>
+        <rect x="0" y="0" width="200" height="80" fill="#0d2137"/>
+        <!-- Claude A: mascot style, round body -->
+        <ellipse cx="100" cy="105" rx="28" ry="18" fill="#b5651d" opacity="0.7"/>
+        <ellipse cx="100" cy="90" rx="28" ry="22" fill="#cc7a2e"/>
+        <ellipse cx="100" cy="72" rx="20" ry="20" fill="#e8913d"/>
+        <!-- face -->
+        <circle cx="93" cy="70" r="3.5" fill="#1a1a2e"/>
+        <circle cx="107" cy="70" r="3.5" fill="#1a1a2e"/>
+        <path d="M 94 78 Q 100 83 106 78" stroke="#1a1a2e" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- accessories: bow tie, hat -->
+        <polygon points="100,88 92,93 100,90 108,93" fill="#e63946"/>
+        <!-- name tag -->
+        <rect x="80" y="118" width="40" height="14" rx="3" fill="#1e3a8a"/>
+        <text x="100" y="128" text-anchor="middle" fill="white" font-size="7" font-family="monospace">claude_001</text>
+        <!-- action: chat bubble -->
+        <rect x="115" y="50" width="60" height="22" rx="8" fill="white"/>
+        <polygon points="118,72 112,78 125,72" fill="white"/>
+        <text x="145" y="65" text-anchor="middle" fill="#1a1a2e" font-size="8" font-family="monospace">Olá! 👋</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>A — Mascote Fofo (chibi)</h3>
+      <p>Claude redondo estilo mascote, corpo pequeno, expressivo. Customização: cor, chapéu, acessório. Ações: andar (click), chat bubble, dança/emote.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;display:flex;align-items:center;justify-content:center;height:170px;border-radius:8px;">
+      <svg width="200" height="150" viewBox="0 0 200 150">
+        <rect x="0" y="80" width="200" height="70" fill="#1e3a5f"/>
+        <rect x="0" y="0" width="200" height="80" fill="#0d2137"/>
+        <!-- Claude B: humanoid with claude logo -->
+        <!-- body -->
+        <rect x="84" y="90" width="32" height="30" rx="4" fill="#c47a30"/>
+        <!-- head -->
+        <rect x="82" y="58" width="36" height="35" rx="12" fill="#e8913d"/>
+        <!-- claude logo on shirt -->
+        <circle cx="100" cy="105" r="8" fill="#cc6d1f"/>
+        <text x="100" y="109" text-anchor="middle" fill="white" font-size="9" font-weight="bold" font-family="sans-serif">C</text>
+        <!-- face -->
+        <circle cx="93" cy="72" r="3" fill="#1a1a2e"/>
+        <circle cx="107" cy="72" r="3" fill="#1a1a2e"/>
+        <path d="M 94 80 Q 100 85 106 80" stroke="#1a1a2e" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- arms -->
+        <line x1="84" y1="95" x2="70" y2="108" stroke="#e8913d" stroke-width="8" stroke-linecap="round"/>
+        <line x1="116" y1="95" x2="130" y2="108" stroke="#e8913d" stroke-width="8" stroke-linecap="round"/>
+        <!-- legs -->
+        <line x1="92" y1="120" x2="88" y2="138" stroke="#c47a30" stroke-width="9" stroke-linecap="round"/>
+        <line x1="108" y1="120" x2="112" y2="138" stroke="#c47a30" stroke-width="9" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>B — Humanóide com logo Claude</h3>
+      <p>Personagem mais humanoide com braços/pernas, logo do Claude na camiseta. Mais animável. Customização: cor da roupa, acessórios. Ações: andar, emotes, chat.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;display:flex;align-items:center;justify-content:center;height:170px;border-radius:8px;">
+      <svg width="200" height="150" viewBox="0 0 200 150">
+        <rect x="0" y="80" width="200" height="70" fill="#1e3a5f"/>
+        <rect x="0" y="0" width="200" height="80" fill="#0d2137"/>
+        <!-- Claude C: floating orb/spirit -->
+        <ellipse cx="100" cy="115" rx="22" ry="6" fill="#0d2137" opacity="0.6"/>
+        <!-- glow effect -->
+        <circle cx="100" cy="80" r="32" fill="#cc6d1f" opacity="0.15"/>
+        <circle cx="100" cy="80" r="26" fill="#e8913d" opacity="0.3"/>
+        <!-- main body orb -->
+        <circle cx="100" cy="80" r="22" fill="#e8913d"/>
+        <!-- face -->
+        <circle cx="93" cy="78" r="3.5" fill="#1a1a2e"/>
+        <circle cx="107" cy="78" r="3.5" fill="#1a1a2e"/>
+        <path d="M 94 86 Q 100 91 106 86" stroke="#1a1a2e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <!-- floating particles -->
+        <circle cx="68" cy="65" r="3" fill="#cc6d1f" opacity="0.7"/>
+        <circle cx="135" cy="72" r="2" fill="#cc6d1f" opacity="0.5"/>
+        <circle cx="125" cy="55" r="4" fill="#e8913d" opacity="0.4"/>
+        <!-- claude symbol -->
+        <text x="100" y="84" text-anchor="middle" fill="white" font-size="11" font-weight="bold" opacity="0.4" font-family="sans-serif">C</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>C — Espírito Flutuante</h3>
+      <p>Claude como uma orbe mágica que flutua. Visual único, fácil de animar em 3D. Cores customizáveis, partículas ao redor. Mais abstrato/fantástico.</p>
+    </div>
+  </div>
+</div>

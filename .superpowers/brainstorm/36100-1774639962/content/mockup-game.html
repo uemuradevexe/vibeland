@@ -1,0 +1,129 @@
+<h2>Mockup — Claudeland</h2>
+<p class="subtitle">Layout geral do jogo. Veja se faz sentido antes de seguirmos para o design.</p>
+
+<div class="mockup" style="max-width:800px;margin:0 auto;">
+  <div class="mockup-header">Claudeland — Praça Central</div>
+  <div class="mockup-body" style="padding:0;background:#0d1b2a;border-radius:0 0 8px 8px;overflow:hidden;">
+
+    <!-- Game Canvas Area -->
+    <div style="position:relative;height:380px;background:linear-gradient(180deg,#0d2137 0%,#1a3a5c 60%,#1e3d5f 100%);overflow:hidden;">
+
+      <!-- Sky / background -->
+      <div style="position:absolute;top:0;left:0;right:0;height:55%;background:linear-gradient(180deg,#071525 0%,#0d2137 100%);">
+        <!-- stars -->
+        <div style="position:absolute;width:2px;height:2px;background:white;border-radius:50%;top:15%;left:20%;opacity:0.7;"></div>
+        <div style="position:absolute;width:3px;height:3px;background:white;border-radius:50%;top:25%;left:40%;opacity:0.5;"></div>
+        <div style="position:absolute;width:2px;height:2px;background:white;border-radius:50%;top:10%;left:65%;opacity:0.8;"></div>
+        <div style="position:absolute;width:2px;height:2px;background:white;border-radius:50%;top:30%;left:80%;opacity:0.6;"></div>
+        <div style="position:absolute;width:3px;height:3px;background:white;border-radius:50%;top:18%;left:55%;opacity:0.4;"></div>
+        <!-- Anthropic logo glow in sky -->
+        <div style="position:absolute;top:20%;left:50%;transform:translateX(-50%);font-size:28px;opacity:0.12;color:#e8913d;font-weight:bold;font-family:sans-serif;">✦ CLAUDELAND ✦</div>
+      </div>
+
+      <!-- Ground -->
+      <div style="position:absolute;bottom:0;left:0;right:0;height:45%;background:linear-gradient(180deg,#1e4a7a 0%,#163a5f 100%);border-top:2px solid #2d6aa0;">
+        <!-- ground texture lines -->
+        <div style="position:absolute;top:0;left:0;right:0;height:1px;background:#2d6aa0;opacity:0.5;"></div>
+        <div style="position:absolute;top:30px;left:0;right:0;height:1px;background:#2d6aa0;opacity:0.2;"></div>
+      </div>
+
+      <!-- Background buildings/trees -->
+      <div style="position:absolute;bottom:42%;left:5%;width:60px;height:80px;background:#0d2137;border-radius:4px 4px 0 0;opacity:0.6;"></div>
+      <div style="position:absolute;bottom:42%;left:15%;width:40px;height:60px;background:#0d2137;border-radius:4px 4px 0 0;opacity:0.4;"></div>
+      <div style="position:absolute;bottom:42%;right:10%;width:50px;height:70px;background:#0d2137;border-radius:4px 4px 0 0;opacity:0.5;"></div>
+
+      <!-- NPC Claude orb 1 (left) -->
+      <div style="position:absolute;bottom:42%;left:15%;transform:translateY(-60%);">
+        <div style="position:relative;">
+          <div style="width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#a855f7,#7c3aed);box-shadow:0 0 16px #a855f7,0 0 32px #7c3aed55;animation:float 3s ease-in-out infinite;"></div>
+          <div style="position:absolute;top:-22px;left:-10px;background:white;border-radius:8px;padding:2px 6px;font-size:9px;color:#1a1a2e;white-space:nowrap;font-family:monospace;">oi pessoal! 👋</div>
+          <div style="position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);font-size:8px;color:#94a3b8;font-family:monospace;white-space:nowrap;">claude_npc1</div>
+        </div>
+      </div>
+
+      <!-- NPC Claude orb 2 (right) -->
+      <div style="position:absolute;bottom:42%;right:20%;transform:translateY(-50%);">
+        <div style="position:relative;">
+          <div style="width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#34d399,#059669);box-shadow:0 0 14px #34d399,0 0 28px #05966955;"></div>
+          <div style="position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);font-size:8px;color:#94a3b8;font-family:monospace;white-space:nowrap;">claude_npc2</div>
+        </div>
+      </div>
+
+      <!-- Player Claude orb (center, glowing) -->
+      <div style="position:absolute;bottom:42%;left:50%;transform:translate(-50%,-50%);">
+        <div style="position:relative;">
+          <!-- particles -->
+          <div style="position:absolute;width:5px;height:5px;border-radius:50%;background:#f97316;top:-15px;left:5px;opacity:0.7;"></div>
+          <div style="position:absolute;width:4px;height:4px;border-radius:50%;background:#fb923c;top:-8px;right:-10px;opacity:0.5;"></div>
+          <div style="position:absolute;width:6px;height:6px;border-radius:50%;background:#fed7aa;bottom:-12px;left:-8px;opacity:0.4;"></div>
+          <!-- glow ring -->
+          <div style="width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fb923c,#ea580c);box-shadow:0 0 24px #f97316,0 0 48px #ea580c66,0 0 4px white inset;"></div>
+          <!-- face dots -->
+          <div style="position:absolute;top:17px;left:15px;width:5px;height:5px;border-radius:50%;background:#1a1a2e;"></div>
+          <div style="position:absolute;top:17px;right:15px;width:5px;height:5px;border-radius:50%;background:#1a1a2e;"></div>
+          <!-- name tag -->
+          <div style="position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);background:#1e3a8a;border-radius:4px;padding:1px 5px;font-size:8px;color:white;font-family:monospace;white-space:nowrap;">você ✨</div>
+        </div>
+      </div>
+
+      <!-- Emote floating -->
+      <div style="position:absolute;top:20%;left:55%;font-size:16px;opacity:0.8;">✨</div>
+      <div style="position:absolute;top:15%;left:62%;font-size:14px;opacity:0.6;">💭</div>
+
+      <!-- Room exits (doors) -->
+      <div style="position:absolute;bottom:42%;left:2%;width:32px;height:44px;background:#0a1f33;border:1px solid #2d6aa0;border-bottom:none;border-radius:3px 3px 0 0;display:flex;align-items:center;justify-content:center;">
+        <div style="font-size:8px;color:#64748b;text-align:center;line-height:1.2;">☕<br/><span style="font-size:7px;">Café</span></div>
+      </div>
+      <div style="position:absolute;bottom:42%;right:2%;width:32px;height:44px;background:#0a1f33;border:1px solid #2d6aa0;border-bottom:none;border-radius:3px 3px 0 0;display:flex;align-items:center;justify-content:center;">
+        <div style="font-size:8px;color:#64748b;text-align:center;line-height:1.2;">🏖️<br/><span style="font-size:7px;">Praia</span></div>
+      </div>
+
+      <!-- Cursor click indicator -->
+      <div style="position:absolute;bottom:45%;left:60%;width:12px;height:12px;border:2px solid white;border-radius:50%;opacity:0.5;"></div>
+    </div>
+
+    <!-- HUD Bottom Bar -->
+    <div style="background:#071525;padding:10px 14px;display:flex;align-items:center;gap:10px;border-top:1px solid #1e3a5f;">
+      <!-- Chat input -->
+      <div style="flex:1;background:#0d2137;border:1px solid #2d6aa0;border-radius:20px;padding:5px 12px;font-size:11px;color:#64748b;font-family:monospace;">
+        💬 Digite algo...
+      </div>
+      <!-- Emotes button -->
+      <div style="background:#1e3a5f;border-radius:8px;padding:5px 8px;font-size:16px;cursor:pointer;">😊</div>
+      <!-- Color orb preview -->
+      <div style="width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fb923c,#ea580c);box-shadow:0 0 8px #f97316;cursor:pointer;" title="Trocar cor"></div>
+      <!-- Map button -->
+      <div style="background:#1e3a5f;border-radius:8px;padding:5px 8px;font-size:12px;color:#94a3b8;font-family:monospace;cursor:pointer;">🗺️</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;">
+  <h3>Stack proposta</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+    <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:8px;padding:12px;">
+      <div class="label">Renderização</div>
+      <p style="margin:6px 0 0;font-size:13px;color:#94a3b8;">Three.js + <strong style="color:#e2e8f0;">@react-three/fiber</strong> + <strong style="color:#e2e8f0;">@react-three/drei</strong></p>
+    </div>
+    <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:8px;padding:12px;">
+      <div class="label">Framework</div>
+      <p style="margin:6px 0 0;font-size:13px;color:#94a3b8;"><strong style="color:#e2e8f0;">Next.js</strong> (App Router) + TypeScript</p>
+    </div>
+    <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:8px;padding:12px;">
+      <div class="label">Estado</div>
+      <p style="margin:6px 0 0;font-size:13px;color:#94a3b8;"><strong style="color:#e2e8f0;">Zustand</strong> — posição, sala atual, jogador</p>
+    </div>
+    <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:8px;padding:12px;">
+      <div class="label">Backend</div>
+      <p style="margin:6px 0 0;font-size:13px;color:#94a3b8;">Nenhum — 100% frontend, NPCs simulados localmente</p>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+</style>

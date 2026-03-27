@@ -1,0 +1,74 @@
+<h2>Qual perspectiva pro mundo?</h2>
+<p class="subtitle">Como a câmera vai mostrar o Claudeland?</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;display:flex;align-items:center;justify-content:center;height:160px;border-radius:8px;overflow:hidden;position:relative;">
+      <!-- Isometric mockup -->
+      <svg width="180" height="130" viewBox="0 0 180 130">
+        <!-- ground tiles isometric -->
+        <polygon points="90,20 140,50 90,80 40,50" fill="#1e3a5f" stroke="#2d5a8e" stroke-width="1"/>
+        <polygon points="40,50 90,80 90,95 40,65" fill="#162d4a" stroke="#2d5a8e" stroke-width="1"/>
+        <polygon points="90,80 140,50 140,65 90,95" fill="#1a3455" stroke="#2d5a8e" stroke-width="1"/>
+        <!-- claude figure isometric -->
+        <ellipse cx="90" cy="55" rx="14" ry="10" fill="#c0724a"/>
+        <ellipse cx="90" cy="47" rx="10" ry="10" fill="#d4845a"/>
+        <circle cx="87" cy="46" r="2" fill="#1a1a2e"/>
+        <circle cx="93" cy="46" r="2" fill="#1a1a2e"/>
+        <text x="90" y="115" text-anchor="middle" fill="#64748b" font-size="10" font-family="monospace">câmera fixa isométrica</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>A — Isométrico 3D</h3>
+      <p>Câmera fixa em ângulo 45°, mundo tileado. Idêntico ao Club Penguin mas renderizado em 3D com Three.js. Simples, nostálgico, fácil de navegar.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;display:flex;align-items:center;justify-content:center;height:160px;border-radius:8px;overflow:hidden;">
+      <svg width="180" height="130" viewBox="0 0 180 130">
+        <!-- 3D perspective ground -->
+        <polygon points="10,90 90,60 170,90 90,120" fill="#1e3a5f" stroke="#2d5a8e" stroke-width="1"/>
+        <!-- buildings in perspective -->
+        <rect x="30" y="50" width="25" height="40" fill="#1a3455" stroke="#2d5a8e" stroke-width="1"/>
+        <rect x="125" y="55" width="20" height="35" fill="#1a3455" stroke="#2d5a8e" stroke-width="1"/>
+        <!-- claude figure 3D -->
+        <ellipse cx="90" cy="85" rx="12" ry="5" fill="#0f2940" opacity="0.5"/>
+        <ellipse cx="90" cy="75" rx="16" ry="12" fill="#c0724a"/>
+        <ellipse cx="90" cy="63" rx="12" ry="12" fill="#d4845a"/>
+        <circle cx="87" cy="62" r="2.5" fill="#1a1a2e"/>
+        <circle cx="93" cy="62" r="2.5" fill="#1a1a2e"/>
+        <text x="90" y="115" text-anchor="middle" fill="#64748b" font-size="10" font-family="monospace">câmera livre 3D</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>B — Top-down 3D Livre</h3>
+      <p>Câmera aérea controlável (zoom, rotação suave). Mundo totalmente 3D com profundidade real. Mais moderno, aproveitando mais o Three.js.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;display:flex;align-items:center;justify-content:center;height:160px;border-radius:8px;overflow:hidden;">
+      <svg width="180" height="130" viewBox="0 0 180 130">
+        <!-- room environment -->
+        <rect x="0" y="0" width="180" height="90" fill="#1e3a5f"/>
+        <rect x="0" y="90" width="180" height="40" fill="#162d4a"/>
+        <!-- furniture -->
+        <rect x="20" y="65" width="40" height="25" rx="3" fill="#1a3455"/>
+        <rect x="120" y="55" width="45" height="35" rx="3" fill="#1a3455"/>
+        <!-- claude figures walking -->
+        <ellipse cx="70" cy="88" rx="14" ry="10" fill="#c0724a"/>
+        <ellipse cx="70" cy="78" rx="10" ry="10" fill="#d4845a"/>
+        <circle cx="67" cy="77" r="2" fill="#1a1a2e"/>
+        <circle cx="73" cy="77" r="2" fill="#1a1a2e"/>
+        <ellipse cx="105" cy="88" rx="14" ry="10" fill="#c4855a"/>
+        <ellipse cx="105" cy="78" rx="10" ry="10" fill="#d8926a"/>
+        <text x="90" y="115" text-anchor="middle" fill="#64748b" font-size="10" font-family="monospace">câmera lateral 2.5D</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>C — Salas 2.5D (Club Penguin puro)</h3>
+      <p>Câmera lateral fixa por sala, personagens em 3D. Fiel ao original — cada sala é uma cena separada com transições.</p>
+    </div>
+  </div>
+</div>

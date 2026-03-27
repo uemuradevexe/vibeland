@@ -1,0 +1,144 @@
+<h2>Mockup v2 — Claudeland (2.5D, cores sólidas)</h2>
+<p class="subtitle">Câmera lateral fixa, sprites 3D simples, paleta mais sólida</p>
+
+<div class="mockup" style="max-width:800px;margin:0 auto;">
+  <div class="mockup-header">Claudeland — Praça Central</div>
+  <div class="mockup-body" style="padding:0;background:#1a2744;border-radius:0 0 8px 8px;overflow:hidden;">
+
+    <!-- Game Canvas -->
+    <div style="position:relative;height:380px;overflow:hidden;">
+
+      <!-- Sky flat color -->
+      <div style="position:absolute;inset:0;background:#1a2744;"></div>
+
+      <!-- Moon -->
+      <div style="position:absolute;top:18px;right:60px;width:38px;height:38px;border-radius:50%;background:#f0e6c8;box-shadow:0 0 0 3px #1a2744,0 0 0 6px #e8d8a0;"></div>
+
+      <!-- Stars flat -->
+      <div style="position:absolute;top:14px;left:80px;width:3px;height:3px;background:#c8d8f0;border-radius:50%;"></div>
+      <div style="position:absolute;top:30px;left:200px;width:2px;height:2px;background:#c8d8f0;border-radius:50%;"></div>
+      <div style="position:absolute;top:22px;left:340px;width:3px;height:3px;background:#c8d8f0;border-radius:50%;"></div>
+      <div style="position:absolute;top:40px;left:500px;width:2px;height:2px;background:#c8d8f0;border-radius:50%;"></div>
+      <div style="position:absolute;top:12px;left:620px;width:3px;height:3px;background:#c8d8f0;border-radius:50%;"></div>
+
+      <!-- Background buildings (solid, flat) -->
+      <div style="position:absolute;bottom:38%;left:40px;width:70px;height:100px;background:#243560;"></div>
+      <div style="position:absolute;bottom:38%;left:40px;width:70px;height:12px;background:#2d4070;margin-bottom:100px;"></div>
+      <div style="position:absolute;bottom:38%;left:130px;width:50px;height:75px;background:#1e2e55;"></div>
+      <div style="position:absolute;bottom:38%;right:60px;width:80px;height:90px;background:#243560;"></div>
+      <div style="position:absolute;bottom:38%;right:160px;width:55px;height:65px;background:#1e2e55;"></div>
+      <!-- windows -->
+      <div style="position:absolute;bottom:52%;left:50px;width:10px;height:10px;background:#f0c84a;"></div>
+      <div style="position:absolute;bottom:52%;left:70px;width:10px;height:10px;background:#1a2744;border:1px solid #2d4070;"></div>
+      <div style="position:absolute;bottom:48%;left:50px;width:10px;height:10px;background:#1a2744;border:1px solid #2d4070;"></div>
+      <div style="position:absolute;bottom:48%;left:70px;width:10px;height:10px;background:#f0c84a;"></div>
+      <div style="position:absolute;bottom:50%;right:75px;width:10px;height:10px;background:#f0c84a;"></div>
+      <div style="position:absolute;bottom:50%;right:95px;width:10px;height:10px;background:#1a2744;border:1px solid #2d4070;"></div>
+
+      <!-- Ground — solid flat layers -->
+      <div style="position:absolute;bottom:0;left:0;right:0;height:38%;background:#2a4a7f;border-top:3px solid #3d6db5;"></div>
+      <div style="position:absolute;bottom:0;left:0;right:0;height:12%;background:#1e3a6a;"></div>
+      <!-- ground line details -->
+      <div style="position:absolute;bottom:38%;left:0;right:0;height:3px;background:#3d6db5;"></div>
+      <div style="position:absolute;bottom:28%;left:0;right:0;height:1px;background:#2d5a9a;opacity:0.5;"></div>
+
+      <!-- Lamp posts -->
+      <div style="position:absolute;bottom:38%;left:22%;width:4px;height:70px;background:#3d5080;"></div>
+      <div style="position:absolute;bottom:38%;left:22%;margin-bottom:70px;width:20px;height:6px;background:#3d5080;margin-left:-8px;"></div>
+      <div style="position:absolute;bottom:38%;left:22%;margin-bottom:76px;width:8px;height:8px;border-radius:50%;background:#f0e06a;margin-left:-2px;box-shadow:0 0 10px #f0e06a88;"></div>
+
+      <div style="position:absolute;bottom:38%;right:25%;width:4px;height:70px;background:#3d5080;"></div>
+      <div style="position:absolute;bottom:38%;right:25%;margin-bottom:70px;width:20px;height:6px;background:#3d5080;margin-right:-8px;"></div>
+      <div style="position:absolute;bottom:38%;right:25%;margin-bottom:76px;width:8px;height:8px;border-radius:50%;background:#f0e06a;margin-right:-2px;box-shadow:0 0 10px #f0e06a88;"></div>
+
+      <!-- Door LEFT (Café) -->
+      <div style="position:absolute;bottom:38%;left:0;width:44px;height:60px;background:#1a2744;border-right:3px solid #3d6db5;border-top:3px solid #3d6db5;border-radius:0 4px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
+        <span style="font-size:14px;">☕</span>
+        <span style="font-size:7px;color:#7a9cc8;font-family:monospace;">Café</span>
+      </div>
+
+      <!-- Door RIGHT (Biblioteca) -->
+      <div style="position:absolute;bottom:38%;right:0;width:44px;height:60px;background:#1a2744;border-left:3px solid #3d6db5;border-top:3px solid #3d6db5;border-radius:4px 0 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
+        <span style="font-size:14px;">📚</span>
+        <span style="font-size:7px;color:#7a9cc8;font-family:monospace;">Biblio</span>
+      </div>
+
+      <!-- NPC Claude 1 (roxo sólido) -->
+      <div style="position:absolute;bottom:38%;left:18%;transform:translateY(-100%);">
+        <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+          <div style="background:white;border-radius:6px;padding:2px 7px;font-size:9px;color:#1a1a2e;font-family:monospace;margin-bottom:4px;white-space:nowrap;">pensando... 🤔</div>
+          <!-- orb sólido -->
+          <div style="width:38px;height:38px;border-radius:50%;background:#7c3aed;position:relative;">
+            <div style="position:absolute;top:11px;left:10px;width:5px;height:5px;border-radius:50%;background:#1a0030;"></div>
+            <div style="position:absolute;top:11px;right:10px;width:5px;height:5px;border-radius:50%;background:#1a0030;"></div>
+            <div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);width:14px;height:2px;border-radius:1px;background:#1a0030;"></div>
+          </div>
+          <!-- sombra no chão -->
+          <div style="width:28px;height:6px;background:#1e2e55;border-radius:50%;margin-top:2px;opacity:0.7;"></div>
+          <div style="font-size:8px;color:#7a9cc8;font-family:monospace;margin-top:1px;">npc_001</div>
+        </div>
+      </div>
+
+      <!-- NPC Claude 2 (verde sólido) -->
+      <div style="position:absolute;bottom:38%;right:22%;transform:translateY(-100%);">
+        <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+          <div style="width:38px;height:38px;border-radius:50%;background:#059669;position:relative;">
+            <div style="position:absolute;top:11px;left:10px;width:5px;height:5px;border-radius:50%;background:#012a1a;"></div>
+            <div style="position:absolute;top:11px;right:10px;width:5px;height:5px;border-radius:50%;background:#012a1a;"></div>
+            <div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);width:14px;height:2px;border-radius:1px;background:#012a1a;"></div>
+          </div>
+          <div style="width:28px;height:6px;background:#1e2e55;border-radius:50%;margin-top:2px;opacity:0.7;"></div>
+          <div style="font-size:8px;color:#7a9cc8;font-family:monospace;margin-top:1px;">npc_002</div>
+        </div>
+      </div>
+
+      <!-- PLAYER Claude (laranja sólido, centro, maior) -->
+      <div style="position:absolute;bottom:38%;left:50%;transform:translate(-50%,-100%);">
+        <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+          <!-- particles sólidas -->
+          <div style="position:absolute;top:-10px;left:-8px;width:6px;height:6px;border-radius:50%;background:#f97316;"></div>
+          <div style="position:absolute;top:-6px;right:-10px;width:4px;height:4px;border-radius:50%;background:#fb923c;"></div>
+          <div style="position:absolute;top:10px;left:-14px;width:5px;height:5px;border-radius:50%;background:#fdba74;"></div>
+          <!-- orb maior, sólido -->
+          <div style="width:48px;height:48px;border-radius:50%;background:#ea580c;position:relative;border:3px solid #f97316;">
+            <div style="position:absolute;top:13px;left:11px;width:7px;height:7px;border-radius:50%;background:#3a1500;"></div>
+            <div style="position:absolute;top:13px;right:11px;width:7px;height:7px;border-radius:50%;background:#3a1500;"></div>
+            <div style="position:absolute;bottom:11px;left:50%;transform:translateX(-50%);width:18px;height:3px;border-radius:1px;background:#3a1500;"></div>
+          </div>
+          <div style="width:34px;height:7px;background:#1e2e55;border-radius:50%;margin-top:3px;opacity:0.8;"></div>
+          <!-- name badge sólido -->
+          <div style="background:#1e3a8a;border-radius:4px;padding:2px 7px;font-size:8px;color:white;font-family:monospace;margin-top:2px;border:1px solid #3d6db5;">você ✦</div>
+        </div>
+      </div>
+
+      <!-- Emote flutuando -->
+      <div style="position:absolute;top:22%;left:55%;font-size:18px;">✨</div>
+    </div>
+
+    <!-- HUD sólido -->
+    <div style="background:#111e38;padding:10px 14px;display:flex;align-items:center;gap:8px;border-top:2px solid #2a4a7f;">
+      <div style="flex:1;background:#1a2744;border:2px solid #2a4a7f;border-radius:6px;padding:6px 12px;font-size:11px;color:#5a7aa8;font-family:monospace;">
+        💬 Digite algo...
+      </div>
+      <div style="background:#2a4a7f;border-radius:6px;padding:6px 10px;font-size:15px;cursor:pointer;border:2px solid #3d6db5;">😊</div>
+      <!-- Color orb sólido -->
+      <div style="width:28px;height:28px;border-radius:50%;background:#ea580c;border:3px solid #f97316;cursor:pointer;"></div>
+      <div style="background:#2a4a7f;border-radius:6px;padding:6px 10px;font-size:12px;color:#7a9cc8;font-family:monospace;cursor:pointer;border:2px solid #3d6db5;">🗺️</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;">
+  <p class="subtitle">Paleta — sólida, sem gradientes complexos</p>
+  <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="width:40px;height:40px;border-radius:6px;background:#1a2744;border:1px solid #2a4a7f;"></div><span style="font-size:9px;color:#94a3b8;font-family:monospace;">#1a2744</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="width:40px;height:40px;border-radius:6px;background:#2a4a7f;border:1px solid #3d6db5;"></div><span style="font-size:9px;color:#94a3b8;font-family:monospace;">#2a4a7f</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="width:40px;height:40px;border-radius:6px;background:#3d6db5;"></div><span style="font-size:9px;color:#94a3b8;font-family:monospace;">#3d6db5</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="width:40px;height:40px;border-radius:6px;background:#ea580c;border:3px solid #f97316;"></div><span style="font-size:9px;color:#94a3b8;font-family:monospace;">#ea580c</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="width:40px;height:40px;border-radius:6px;background:#7c3aed;"></div><span style="font-size:9px;color:#94a3b8;font-family:monospace;">#7c3aed</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="width:40px;height:40px;border-radius:6px;background:#059669;"></div><span style="font-size:9px;color:#94a3b8;font-family:monospace;">#059669</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="width:40px;height:40px;border-radius:6px;background:#f0e6c8;"></div><span style="font-size:9px;color:#94a3b8;font-family:monospace;">#f0e6c8</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="width:40px;height:40px;border-radius:6px;background:#f0c84a;"></div><span style="font-size:9px;color:#94a3b8;font-family:monospace;">#f0c84a</span></div>
+  </div>
+</div>
