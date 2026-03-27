@@ -83,7 +83,7 @@ export interface GameState {
   dismissDailyBonus: () => void
 }
 
-export const useGameStore = create<GameState>((set) => ({
+export const useGameStore = create<GameState>((set, get) => ({
   playerName: '',
   playerColor: '#ea580c',
   playerX: 0,
@@ -94,6 +94,11 @@ export const useGameStore = create<GameState>((set) => ({
   playerChatTimer: 0,
   playerEmote: null,
   playerEmoteTimer: 0,
+  playerHat: 'none',
+  playerVehicle: 'none',
+  tokens: 0,
+  inventory: ['none'],
+  dailyBonusPending: 0,
   currentRoom: 'plaza',
   npcs: [],
   remotePlayers: {},
@@ -228,4 +233,46 @@ export const useGameStore = create<GameState>((set) => ({
       remotePlayers,
     }
   }),
+
+  // ── Skins & Tokens ──────────────────────────────────────────────────
+  equipHat: (hat) => {
+    const { playerVehicle } = get()
+    saveEquipped(hat, playerVehicle)
+    set({ playerHat: hat })
+  },
+
+  equipVehicle: (vehicle) => {
+    const { playerHat } = get()
+    saveEquipped(playerHat, vehicle)
+    set({ playerVehicle: vehicle })
+  },
+
+  buyItem: (itemId, cost) => {
+    const { tokens, inventory } = get()
+    if (tokens < cost) return false
+    const newTokens = tokens - cost
+    const newInventory = inventory.includes(itemId) ? inventory : [...inventory, itemId]
+    saveTokens(newTokens)
+    saveInventory(newInventory)
+    set({ tokens: newTokens, inventory: newInventory })
+    return true
+  },
+
+  initPlayer: () => {
+    const tokens = loadTokens()
+    const bonus = claimDailyBonus()
+    const finalTokens = tokens + bonus
+    if (bonus > 0) saveTokens(finalTokens)
+    const equipped = loadEquipped()
+    const inventory = loadInventory()
+    set({
+      tokens: finalTokens,
+      dailyBonusPending: bonus,
+      playerHat: equipped.hat as HatId,
+      playerVehicle: equipped.vehicle as VehicleId,
+      inventory,
+    })
+  },
+
+  dismissDailyBonus: () => set({ dailyBonusPending: 0 }),
 }))

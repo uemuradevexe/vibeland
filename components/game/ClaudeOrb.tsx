@@ -4,6 +4,7 @@ import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
+import { HATS, VEHICLES, type HatId, type VehicleId } from '@/lib/skins'
 
 interface ClaudeOrbProps {
   x: number
@@ -13,6 +14,8 @@ interface ClaudeOrbProps {
   chat?: string | null
   emote?: string | null
   isPlayer?: boolean
+  hat?: HatId
+  vehicle?: VehicleId
 }
 
 // Slightly darker shade for limbs
@@ -29,7 +32,9 @@ function darkenHex(hex: string, amount = 0.62): string {
 //   Torso  : 0.50 × 0.75 × 0.25   center y=1.125
 //   Arms   : 0.25 × 0.75 × 0.25   pivot at shoulder y=1.50, x=±0.375
 //   Head   : 0.50 × 0.50 × 0.50   center y=1.75
-export default function ClaudeOrb({ x, z = 0, color, name, chat, emote, isPlayer }: ClaudeOrbProps) {
+export default function ClaudeOrb({ x, z = 0, color, name, chat, emote, isPlayer, hat = 'none', vehicle = 'none' }: ClaudeOrbProps) {
+  const hatDef     = HATS[hat]     ?? HATS.none
+  const vehicleDef = VEHICLES[vehicle] ?? VEHICLES.none
   const rootRef   = useRef<THREE.Group>(null)
   const bodyRef   = useRef<THREE.Group>(null)   // Y rotation (faces direction)
   const floatRef  = useRef<THREE.Group>(null)   // idle bob
@@ -154,10 +159,39 @@ export default function ClaudeOrb({ x, z = 0, color, name, chat, emote, isPlayer
             <meshStandardMaterial color="#1a0a00" />
           </mesh>
 
+          {/* HAT — pieces positioned relative to top of head (y=2.0) */}
+          {hatDef.pieces.length > 0 && (
+            <group position={[0, 2.0, 0]}>
+              {hatDef.pieces.map((piece, i) => (
+                <mesh key={i} position={piece.position}>
+                  <boxGeometry args={piece.size} />
+                  <meshStandardMaterial
+                    color={piece.color}
+                    emissive={piece.emissive ?? piece.color}
+                    emissiveIntensity={piece.emissiveIntensity ?? 0}
+                    toneMapped={false}
+                  />
+                </mesh>
+              ))}
+            </group>
+          )}
+
+          {/* VEHICLE — pieces rendered below feet */}
+          {vehicleDef.pieces.length > 0 && (
+            <group>
+              {vehicleDef.pieces.map((piece, i) => (
+                <mesh key={i} position={piece.position}>
+                  <boxGeometry args={piece.size} />
+                  <meshStandardMaterial color={piece.color} />
+                </mesh>
+              ))}
+            </group>
+          )}
+
         </group>{/* /floatRef */}
 
-        {/* Player crown — sits above head at fixed position */}
-        {isPlayer && (
+        {/* Player crown — hidden when a hat is equipped */}
+        {isPlayer && hat === 'none' && (
           <>
             <mesh position={[-0.13, 2.07, 0]}>
               <boxGeometry args={[0.12, 0.12, 0.12]} />
