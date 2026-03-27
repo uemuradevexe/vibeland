@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGameStore } from '@/store/gameStore'
 import { ROOMS } from '@/lib/roomConfig'
 import { ORB_COLORS } from '@/lib/orbColors'
+import WardrobeModal from '@/components/ui/WardrobeModal'
 
 const EMOTES = ['❤️', '✨', '😂', '🤔', '👋', '🎉']
 
@@ -12,6 +13,8 @@ export default function HUD() {
   const [showEmotes, setShowEmotes] = useState(false)
   const [showColors, setShowColors] = useState(false)
   const [showMap, setShowMap] = useState(false)
+  const [showWardrobe, setShowWardrobe] = useState(false)
+  const [showDailyToast, setShowDailyToast] = useState(false)
 
   const sendChat = useGameStore((s) => s.sendChat)
   const sendEmote = useGameStore((s) => s.sendEmote)
@@ -19,9 +22,23 @@ export default function HUD() {
   const setPlayerColor = useGameStore((s) => s.setPlayerColor)
   const currentRoom = useGameStore((s) => s.currentRoom)
   const changeRoom = useGameStore((s) => s.changeRoom)
-  const playerName    = useGameStore((s) => s.playerName)
-  const remotePlayers = useGameStore((s) => s.remotePlayers)
-  const onlineCount   = Object.keys(remotePlayers).length + 1   // +1 = self
+  const playerName          = useGameStore((s) => s.playerName)
+  const tokens              = useGameStore((s) => s.tokens)
+  const dailyBonusPending   = useGameStore((s) => s.dailyBonusPending)
+  const dismissDailyBonus   = useGameStore((s) => s.dismissDailyBonus)
+  const remotePlayers       = useGameStore((s) => s.remotePlayers)
+  const onlineCount         = Object.keys(remotePlayers).length + 1
+
+  useEffect(() => {
+    if (dailyBonusPending > 0) {
+      setShowDailyToast(true)
+      const t = setTimeout(() => {
+        setShowDailyToast(false)
+        dismissDailyBonus()
+      }, 4000)
+      return () => clearTimeout(t)
+    }
+  }, [dailyBonusPending, dismissDailyBonus])
 
   function handleSendChat() {
     if (!chatInput.trim()) return
@@ -32,8 +49,8 @@ export default function HUD() {
 
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between">
-      {/* Top bar: room name */}
-      <div className="pointer-events-none flex justify-center pt-4">
+      {/* Top bar */}
+      <div className="pointer-events-none flex justify-between items-start pt-4 px-4">
         <div className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-5 py-1.5 font-mono text-sm text-[#7a9cc8] backdrop-blur-sm">
           {ROOMS[currentRoom].emoji} {ROOMS[currentRoom].name}
           <span className="ml-3 text-[#3d6db5]">·</span>
@@ -41,7 +58,17 @@ export default function HUD() {
           <span className="ml-3 text-[#3d6db5]">·</span>
           <span className="ml-2 text-[#5a9a58] text-xs">🟢 {onlineCount}</span>
         </div>
+        <div className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-4 py-1.5 font-mono text-sm text-yellow-400 backdrop-blur-sm">
+          💰 {tokens}
+        </div>
       </div>
+
+      {/* Daily login bonus toast */}
+      {showDailyToast && (
+        <div className="pointer-events-none absolute top-16 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-black font-mono text-sm font-bold px-5 py-2 rounded-full shadow-lg animate-bounce z-50">
+          🎁 +{dailyBonusPending} tokens — daily login!
+        </div>
+      )}
 
       {/* Map overlay */}
       {showMap && (
@@ -73,6 +100,9 @@ export default function HUD() {
           </div>
         </div>
       )}
+
+      {/* Wardrobe modal */}
+      {showWardrobe && <WardrobeModal onClose={() => setShowWardrobe(false)} />}
 
       {/* Bottom HUD */}
       <div className="pointer-events-auto p-3 flex items-end gap-2">
@@ -146,6 +176,14 @@ export default function HUD() {
             boxShadow: `0 0 12px ${playerColor}88`,
           }}
         />
+
+        {/* Wardrobe button */}
+        <button
+          onClick={() => { setShowWardrobe(true); setShowEmotes(false); setShowColors(false) }}
+          className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0"
+        >
+          👕
+        </button>
 
         {/* Map button */}
         <button
