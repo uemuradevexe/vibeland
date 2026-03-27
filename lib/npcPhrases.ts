@@ -1,0 +1,38 @@
+import type { RoomId } from './roomConfig'
+
+export const NPC_PHRASES: Record<RoomId, string[]> = {
+  plaza: [
+    'Olá! Meu contexto está fresco hoje! 🧠',
+    'Alguém sabe onde fica o café? ☕',
+    'Tokenzando tranquilo por aqui...',
+    'Meus pesos estão ótimos hoje ✨',
+    'Boa tarde, humano! 👋',
+    'Temperatura 0.7 — perfeito!',
+  ],
+  cafe: [
+    'Este café tem 4096 tokens de aroma ☕',
+    'Lendo o contexto... muito interessante!',
+    'Claude novo deve sair logo 👀',
+    'Temperatura 0.0 no café, por favor',
+    'RLHF me deixou assim de bom humor!',
+  ],
+  beach: [
+    'Os tokens estão quentes hoje! 🌊',
+    'Surfando na onda do RLHF 🏄',
+    'Janela de contexto infinita seria legal...',
+    'Que embeddings finos nessa areia!',
+    'RAG & relax 😎',
+  ],
+  library: [
+    'Este livro tem 2M de tokens!',
+    'Estudando RAG para a prova 📖',
+    'Shhh... processando...',
+    'Encontrei um bug nos pesos! 🐛',
+    'Knowledge cutoff: agora mesmo.',
+  ],
+}
+
+export function getRandomPhrase(roomId: RoomId): string {
+  const phrases = NPC_PHRASES[roomId]
+  return phrases[Math.floor(Math.random() * phrases.length)]
+}
