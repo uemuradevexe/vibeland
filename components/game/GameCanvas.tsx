@@ -9,6 +9,7 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import Room from './Room'
 import HUD from './HUD'
 import { useGameStore } from '@/store/gameStore'
+import { useMultiplayer } from '@/hooks/useMultiplayer'
 
 function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null)
@@ -44,6 +45,8 @@ function CameraRig() {
 }
 
 export default function GameCanvas() {
+  useMultiplayer()
+
   return (
     <div className="w-screen h-screen relative">
       <Canvas
