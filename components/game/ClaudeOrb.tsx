@@ -69,8 +69,8 @@ export default function ClaudeOrb({ x, y = 0, color, name, chat, emote, isPlayer
       ))}
 
       {/* Ground shadow */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -radius - 0.05, 0]}>
-        <ellipseGeometry args={[radius * 0.8, radius * 0.4, 16]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -radius - 0.05, 0]} scale={[1, 0.5, 1]}>
+        <circleGeometry args={[radius * 0.8, 16]} />
         <meshStandardMaterial color="#000000" transparent opacity={0.3} />
       </mesh>
 
