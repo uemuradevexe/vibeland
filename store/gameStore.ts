@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import type { RoomId } from '@/lib/roomConfig'
+import { ROOMS, type RoomId } from '@/lib/roomConfig'
+import { resolvePosition } from '@/lib/collision'
 
 export interface NPC {
   id: string
@@ -76,10 +77,13 @@ export const useGameStore = create<GameState>((set) => ({
   setNPCs: (npcs) => set({ npcs }),
 
   tickGame: (delta) => set((state) => {
+    const colliders = ROOMS[state.currentRoom].colliders
+
     const dx = state.playerTargetX - state.playerX
     const dz = state.playerTargetZ - state.playerZ
-    const newX = Math.abs(dx) < 0.05 ? state.playerTargetX : state.playerX + dx * Math.min(delta * 3, 1)
-    const newZ = Math.abs(dz) < 0.05 ? state.playerTargetZ : state.playerZ + dz * Math.min(delta * 3, 1)
+    let newX = Math.abs(dx) < 0.05 ? state.playerTargetX : state.playerX + dx * Math.min(delta * 3, 1)
+    let newZ = Math.abs(dz) < 0.05 ? state.playerTargetZ : state.playerZ + dz * Math.min(delta * 3, 1)
+    ;[newX, newZ] = resolvePosition(newX, newZ, colliders)
 
     const playerChatTimer = Math.max(0, state.playerChatTimer - delta)
     const playerEmoteTimer = Math.max(0, state.playerEmoteTimer - delta)
@@ -87,8 +91,9 @@ export const useGameStore = create<GameState>((set) => ({
     const npcs = state.npcs.map((npc) => {
       const ndx = npc.targetX - npc.x
       const ndz = npc.targetZ - npc.z
-      const nx = Math.abs(ndx) < 0.05 ? npc.targetX : npc.x + ndx * Math.min(delta * 2, 1)
-      const nz = Math.abs(ndz) < 0.05 ? npc.targetZ : npc.z + ndz * Math.min(delta * 2, 1)
+      let nx = Math.abs(ndx) < 0.05 ? npc.targetX : npc.x + ndx * Math.min(delta * 2, 1)
+      let nz = Math.abs(ndz) < 0.05 ? npc.targetZ : npc.z + ndz * Math.min(delta * 2, 1)
+      ;[nx, nz] = resolvePosition(nx, nz, colliders)
 
       const phraseTimer = Math.max(0, npc.phraseTimer - delta)
       let wanderTimer = npc.wanderTimer - delta
@@ -97,8 +102,11 @@ export const useGameStore = create<GameState>((set) => ({
       const phrase = phraseTimer > 0 ? npc.phrase : null
 
       if (wanderTimer <= 0) {
-        targetX = (Math.random() - 0.5) * 28
-        targetZ = (Math.random() - 0.5) * 28
+        let wx = (Math.random() - 0.5) * 28
+        let wz = (Math.random() - 0.5) * 28
+        ;[wx, wz] = resolvePosition(wx, wz, colliders)
+        targetX = wx
+        targetZ = wz
         wanderTimer = 4 + Math.random() * 6
       }
 
