@@ -4,6 +4,8 @@ import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useGameStore } from '@/store/gameStore'
+import { ROOMS } from '@/lib/roomConfig'
+import { resolvePosition } from '@/lib/collision'
 
 const SPEED = 5          // units per second
 const BOUNDS = 17        // ±17 units
@@ -62,8 +64,9 @@ export default function KeyboardInput() {
     const step = (SPEED * delta) / len
 
     const store = useGameStore.getState()
-    const nx = Math.max(-BOUNDS, Math.min(BOUNDS, store.playerTargetX + mx * step))
-    const nz = Math.max(-BOUNDS, Math.min(BOUNDS, store.playerTargetZ + mz * step))
+    let nx = Math.max(-BOUNDS, Math.min(BOUNDS, store.playerTargetX + mx * step))
+    let nz = Math.max(-BOUNDS, Math.min(BOUNDS, store.playerTargetZ + mz * step))
+    ;[nx, nz] = resolvePosition(nx, nz, ROOMS[store.currentRoom].colliders)
     setPlayerTarget(nx, nz)
   })
 

@@ -3,6 +3,8 @@
 import { useRef } from 'react'
 import * as THREE from 'three'
 import { useGameStore } from '@/store/gameStore'
+import { ROOMS } from '@/lib/roomConfig'
+import { resolvePosition } from '@/lib/collision'
 
 // Invisible horizontal plane — click to walk in XZ
 export default function GroundPlane() {
@@ -11,9 +13,11 @@ export default function GroundPlane() {
 
   function handleClick(e: { point: THREE.Vector3; stopPropagation: () => void }) {
     e.stopPropagation()
-    const targetX = Math.max(-17, Math.min(17, e.point.x))
-    const targetZ = Math.max(-17, Math.min(17, e.point.z))
-    setPlayerTarget(targetX, targetZ)
+    let x = Math.max(-17, Math.min(17, e.point.x))
+    let z = Math.max(-17, Math.min(17, e.point.z))
+    const { currentRoom } = useGameStore.getState()
+    ;[x, z] = resolvePosition(x, z, ROOMS[currentRoom].colliders)
+    setPlayerTarget(x, z)
   }
 
   return (
