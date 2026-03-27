@@ -7,6 +7,7 @@ import BeachRoom from '@/components/rooms/BeachRoom'
 import LibraryRoom from '@/components/rooms/LibraryRoom'
 import ClaudeOrb from './ClaudeOrb'
 import NPCManager from './NPCManager'
+import KeyboardInput from './KeyboardInput'
 
 const ROOM_COMPONENTS = {
   plaza: PlazaRoom,
@@ -28,6 +29,7 @@ export default function Room() {
 
   return (
     <>
+      <KeyboardInput />
       <RoomComponent />
       <NPCManager />
       <ClaudeOrb
