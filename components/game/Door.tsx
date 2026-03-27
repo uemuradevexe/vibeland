@@ -14,7 +14,7 @@ export default function Door({ config, accentColor }: DoorProps) {
   const [hovered, setHovered] = useState(false)
   const changeRoom = useGameStore((s) => s.changeRoom)
 
-  const doorX = config.side === 'left' ? -8 : 8
+  const doorX = config.side === 'left' ? -17 : 17
   const pillarColor = hovered ? accentColor : '#2a3a5a'
 
   return (

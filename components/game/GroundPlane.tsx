@@ -11,8 +11,8 @@ export default function GroundPlane() {
 
   function handleClick(e: { point: THREE.Vector3; stopPropagation: () => void }) {
     e.stopPropagation()
-    const targetX = Math.max(-7, Math.min(7, e.point.x))
-    const targetZ = Math.max(-7, Math.min(7, e.point.z))
+    const targetX = Math.max(-17, Math.min(17, e.point.x))
+    const targetZ = Math.max(-17, Math.min(17, e.point.z))
     setPlayerTarget(targetX, targetZ)
   }
 
@@ -23,7 +23,7 @@ export default function GroundPlane() {
       position={[0, 0, 0]}
       onClick={handleClick}
     >
-      <planeGeometry args={[24, 24]} />
+      <planeGeometry args={[50, 50]} />
       <meshStandardMaterial transparent opacity={0} />
     </mesh>
   )
