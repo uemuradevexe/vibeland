@@ -15,8 +15,8 @@ interface ClaudeOrbProps {
   isPlayer?: boolean
 }
 
-// Derive a slightly darker shade for limbs
-function darkenHex(hex: string, amount = 0.6): string {
+// Slightly darker shade for limbs
+function darkenHex(hex: string, amount = 0.62): string {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
@@ -24,25 +24,30 @@ function darkenHex(hex: string, amount = 0.6): string {
   return `#${d(r)}${d(g)}${d(b)}`
 }
 
+// Minecraft-style proportions (total height ~2 units, feet at y=0):
+//   Legs   : 0.25 × 0.75 × 0.25   pivot at hip y=0.75, x=±0.125
+//   Torso  : 0.50 × 0.75 × 0.25   center y=1.125
+//   Arms   : 0.25 × 0.75 × 0.25   pivot at shoulder y=1.50, x=±0.375
+//   Head   : 0.50 × 0.50 × 0.50   center y=1.75
 export default function ClaudeOrb({ x, z = 0, color, name, chat, emote, isPlayer }: ClaudeOrbProps) {
-  const rootRef = useRef<THREE.Group>(null)   // position group
-  const bodyRef = useRef<THREE.Group>(null)   // rotates to face direction
-  const leftArmRef = useRef<THREE.Mesh>(null)
+  const rootRef   = useRef<THREE.Group>(null)
+  const bodyRef   = useRef<THREE.Group>(null)   // Y rotation (faces direction)
+  const floatRef  = useRef<THREE.Group>(null)   // idle bob
+  const leftArmRef  = useRef<THREE.Mesh>(null)
   const rightArmRef = useRef<THREE.Mesh>(null)
-  const leftLegRef = useRef<THREE.Mesh>(null)
+  const leftLegRef  = useRef<THREE.Mesh>(null)
   const rightLegRef = useRef<THREE.Mesh>(null)
-  const headRef = useRef<THREE.Mesh>(null)
 
-  const prevPos = useRef({ x, z })
+  const prevPos    = useRef({ x, z })
   const targetRotY = useRef(0)
-  const walkPhase = useRef(Math.random() * Math.PI * 2)
-  const idlePhase = useRef(Math.random() * Math.PI * 2)
+  const walkPhase  = useRef(Math.random() * Math.PI * 2)
+  const idlePhase  = useRef(Math.random() * Math.PI * 2)
 
   const limbColor = darkenHex(color)
-  const scale = isPlayer ? 1.15 : 1.0
+  const scale = isPlayer ? 1.1 : 1.0
 
   useFrame((_, delta) => {
-    if (!rootRef.current || !bodyRef.current) return
+    if (!bodyRef.current || !floatRef.current) return
 
     const dx = x - prevPos.current.x
     const dz = z - prevPos.current.z
@@ -50,30 +55,25 @@ export default function ClaudeOrb({ x, z = 0, color, name, chat, emote, isPlayer
     const isMoving = speed > 0.002
 
     if (isMoving) {
-      // Face direction of movement
       targetRotY.current = Math.atan2(dx, dz)
       walkPhase.current += delta * 7
-
       const swing = Math.sin(walkPhase.current)
-      if (leftLegRef.current)  leftLegRef.current.rotation.x  =  swing * 0.55
-      if (rightLegRef.current) rightLegRef.current.rotation.x = -swing * 0.55
-      if (leftArmRef.current)  leftArmRef.current.rotation.x  = -swing * 0.4
-      if (rightArmRef.current) rightArmRef.current.rotation.x  =  swing * 0.4
+      if (leftLegRef.current)   leftLegRef.current.rotation.x  =  swing * 0.6
+      if (rightLegRef.current)  rightLegRef.current.rotation.x = -swing * 0.6
+      if (leftArmRef.current)   leftArmRef.current.rotation.x  = -swing * 0.45
+      if (rightArmRef.current)  rightArmRef.current.rotation.x  =  swing * 0.45
     } else {
-      // Ease limbs back to neutral
-      if (leftLegRef.current)  leftLegRef.current.rotation.x  *= 0.85
-      if (rightLegRef.current) rightLegRef.current.rotation.x *= 0.85
-      if (leftArmRef.current)  leftArmRef.current.rotation.x  *= 0.85
-      if (rightArmRef.current) rightArmRef.current.rotation.x *= 0.85
+      if (leftLegRef.current)   leftLegRef.current.rotation.x  *= 0.85
+      if (rightLegRef.current)  rightLegRef.current.rotation.x *= 0.85
+      if (leftArmRef.current)   leftArmRef.current.rotation.x  *= 0.85
+      if (rightArmRef.current)  rightArmRef.current.rotation.x *= 0.85
 
-      // Idle head bob
-      idlePhase.current += delta * 1.2
-      if (headRef.current) {
-        headRef.current.position.y = 0.85 + Math.sin(idlePhase.current) * 0.015
-      }
+      // Idle bob on whole character
+      idlePhase.current += delta * 1.4
+      floatRef.current.position.y = Math.sin(idlePhase.current) * 0.018
     }
 
-    // Smooth Y rotation toward target direction
+    // Smooth Y rotation toward movement direction
     const diff = targetRotY.current - bodyRef.current.rotation.y
     const wrapped = ((diff + Math.PI) % (2 * Math.PI)) - Math.PI
     bodyRef.current.rotation.y += wrapped * Math.min(delta * 14, 1)
@@ -83,100 +83,100 @@ export default function ClaudeOrb({ x, z = 0, color, name, chat, emote, isPlayer
 
   return (
     <group ref={rootRef} position={[x, 0, z]} scale={[scale, scale, scale]}>
-      {/* Shadow on ground */}
+      {/* Shadow */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-        <circleGeometry args={[0.28, 14]} />
-        <meshStandardMaterial color="#000" transparent opacity={0.22} />
+        <circleGeometry args={[0.3, 16]} />
+        <meshStandardMaterial color="#000" transparent opacity={0.2} />
       </mesh>
 
-      {/* Character body — rotates to face movement */}
+      {/* Body group — rotates to face direction */}
       <group ref={bodyRef}>
+        {/* Float group — idle bob offset */}
+        <group ref={floatRef}>
 
-        {/* LEGS — pivot from top of leg (hip) */}
-        {/* Left leg */}
-        <group position={[-0.1, 0.48, 0]}>
-          <mesh ref={leftLegRef} position={[0, -0.25, 0]}>
-            <boxGeometry args={[0.2, 0.5, 0.2]} />
-            <meshStandardMaterial color={limbColor} />
+          {/* LEGS — pivot at hip */}
+          <group position={[-0.125, 0.75, 0]}>
+            <mesh ref={leftLegRef} position={[0, -0.375, 0]}>
+              <boxGeometry args={[0.25, 0.75, 0.25]} />
+              <meshStandardMaterial color={limbColor} />
+            </mesh>
+          </group>
+          <group position={[0.125, 0.75, 0]}>
+            <mesh ref={rightLegRef} position={[0, -0.375, 0]}>
+              <boxGeometry args={[0.25, 0.75, 0.25]} />
+              <meshStandardMaterial color={limbColor} />
+            </mesh>
+          </group>
+
+          {/* TORSO */}
+          <mesh position={[0, 1.125, 0]}>
+            <boxGeometry args={[0.5, 0.75, 0.25]} />
+            <meshStandardMaterial
+              color={color}
+              emissive={color}
+              emissiveIntensity={isPlayer ? 0.22 : 0.1}
+              toneMapped={false}
+            />
           </mesh>
-        </group>
-        {/* Right leg */}
-        <group position={[0.1, 0.48, 0]}>
-          <mesh ref={rightLegRef} position={[0, -0.25, 0]}>
-            <boxGeometry args={[0.2, 0.5, 0.2]} />
-            <meshStandardMaterial color={limbColor} />
+
+          {/* ARMS — pivot at shoulder */}
+          <group position={[-0.375, 1.5, 0]}>
+            <mesh ref={leftArmRef} position={[0, -0.375, 0]}>
+              <boxGeometry args={[0.25, 0.75, 0.25]} />
+              <meshStandardMaterial color={limbColor} />
+            </mesh>
+          </group>
+          <group position={[0.375, 1.5, 0]}>
+            <mesh ref={rightArmRef} position={[0, -0.375, 0]}>
+              <boxGeometry args={[0.25, 0.75, 0.25]} />
+              <meshStandardMaterial color={limbColor} />
+            </mesh>
+          </group>
+
+          {/* HEAD */}
+          <mesh position={[0, 1.75, 0]}>
+            <boxGeometry args={[0.5, 0.5, 0.5]} />
+            <meshStandardMaterial
+              color={color}
+              emissive={color}
+              emissiveIntensity={isPlayer ? 0.28 : 0.13}
+              toneMapped={false}
+            />
           </mesh>
-        </group>
 
-        {/* BODY */}
-        <mesh position={[0, 0.72, 0]}>
-          <boxGeometry args={[0.42, 0.46, 0.26]} />
-          <meshStandardMaterial
-            color={color}
-            emissive={color}
-            emissiveIntensity={isPlayer ? 0.25 : 0.12}
-            toneMapped={false}
-          />
-        </mesh>
-
-        {/* ARMS — pivot from shoulder */}
-        {/* Left arm */}
-        <group position={[-0.32, 0.88, 0]}>
-          <mesh ref={leftArmRef} position={[0, -0.22, 0]}>
-            <boxGeometry args={[0.18, 0.44, 0.18]} />
-            <meshStandardMaterial color={limbColor} />
+          {/* Eyes — front face */}
+          <mesh position={[-0.12, 1.79, 0.26]}>
+            <boxGeometry args={[0.1, 0.1, 0.02]} />
+            <meshStandardMaterial color="#1a0a00" />
           </mesh>
-        </group>
-        {/* Right arm */}
-        <group position={[0.32, 0.88, 0]}>
-          <mesh ref={rightArmRef} position={[0, -0.22, 0]}>
-            <boxGeometry args={[0.18, 0.44, 0.18]} />
-            <meshStandardMaterial color={limbColor} />
+          <mesh position={[0.12, 1.79, 0.26]}>
+            <boxGeometry args={[0.1, 0.1, 0.02]} />
+            <meshStandardMaterial color="#1a0a00" />
           </mesh>
-        </group>
 
-        {/* HEAD */}
-        <mesh ref={headRef} position={[0, 1.22, 0]}>
-          <boxGeometry args={[0.46, 0.46, 0.46]} />
-          <meshStandardMaterial
-            color={color}
-            emissive={color}
-            emissiveIntensity={isPlayer ? 0.3 : 0.15}
-            toneMapped={false}
-          />
-        </mesh>
+        </group>{/* /floatRef */}
 
-        {/* Eyes — on front face of head (z+ face) */}
-        <mesh position={[-0.11, 1.25, 0.24]}>
-          <boxGeometry args={[0.09, 0.09, 0.02]} />
-          <meshStandardMaterial color="#1a0a00" />
-        </mesh>
-        <mesh position={[0.11, 1.25, 0.24]}>
-          <boxGeometry args={[0.09, 0.09, 0.02]} />
-          <meshStandardMaterial color="#1a0a00" />
-        </mesh>
-
-        {/* Player crown indicator */}
+        {/* Player crown — sits above head at fixed position */}
         {isPlayer && (
           <>
-            <mesh position={[-0.1, 1.54, 0]}>
-              <boxGeometry args={[0.1, 0.1, 0.1]} />
-              <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} toneMapped={false} />
+            <mesh position={[-0.13, 2.07, 0]}>
+              <boxGeometry args={[0.12, 0.12, 0.12]} />
+              <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.5} toneMapped={false} />
             </mesh>
-            <mesh position={[0, 1.58, 0]}>
-              <boxGeometry args={[0.1, 0.14, 0.1]} />
-              <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} toneMapped={false} />
+            <mesh position={[0, 2.12, 0]}>
+              <boxGeometry args={[0.12, 0.18, 0.12]} />
+              <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.5} toneMapped={false} />
             </mesh>
-            <mesh position={[0.1, 1.54, 0]}>
-              <boxGeometry args={[0.1, 0.1, 0.1]} />
-              <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} toneMapped={false} />
+            <mesh position={[0.13, 2.07, 0]}>
+              <boxGeometry args={[0.12, 0.12, 0.12]} />
+              <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.5} toneMapped={false} />
             </mesh>
           </>
         )}
 
         {/* Name tag */}
         <Html
-          position={[0, 1.8, 0]}
+          position={[0, 2.22, 0]}
           center
           style={{ pointerEvents: 'none', userSelect: 'none' }}
         >
@@ -196,7 +196,7 @@ export default function ClaudeOrb({ x, z = 0, color, name, chat, emote, isPlayer
 
         {/* Chat bubble */}
         {chat && (
-          <Html position={[0, 2.1, 0]} center style={{ pointerEvents: 'none' }}>
+          <Html position={[0, 2.55, 0]} center style={{ pointerEvents: 'none' }}>
             <div style={{
               background: 'white',
               color: '#1a1a2e',
@@ -224,13 +224,14 @@ export default function ClaudeOrb({ x, z = 0, color, name, chat, emote, isPlayer
 
         {/* Emote */}
         {emote && (
-          <Html position={[0.4, 2.0, 0]} center style={{ pointerEvents: 'none' }}>
+          <Html position={[0.45, 2.4, 0]} center style={{ pointerEvents: 'none' }}>
             <div style={{ fontSize: 20, animation: 'floatUp 2s ease-out forwards' }}>
               {emote}
             </div>
           </Html>
         )}
-      </group>
+
+      </group>{/* /bodyRef */}
     </group>
   )
 }
