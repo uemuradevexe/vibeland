@@ -31,8 +31,8 @@ export const ROOMS: Record<RoomId, RoomConfig> = {
       { side: 'left', leadsTo: 'cafe', label: 'Café', emoji: '☕' },
       { side: 'right', leadsTo: 'beach', label: 'Praia', emoji: '🏖️' },
     ],
-    npcCount: 3,
-    npcColors: ['#7c3aed', '#059669', '#0ea5e9'],
+    npcCount: 5,
+    npcColors: ['#7c3aed', '#059669', '#0ea5e9', '#f59e0b', '#ec4899'],
   },
   cafe: {
     id: 'cafe',
@@ -45,8 +45,8 @@ export const ROOMS: Record<RoomId, RoomConfig> = {
       { side: 'left', leadsTo: 'library', label: 'Biblioteca', emoji: '📚' },
       { side: 'right', leadsTo: 'plaza', label: 'Praça', emoji: '🏔️' },
     ],
-    npcCount: 2,
-    npcColors: ['#f59e0b', '#dc2626'],
+    npcCount: 4,
+    npcColors: ['#f59e0b', '#dc2626', '#f97316', '#a855f7'],
   },
   beach: {
     id: 'beach',
@@ -58,8 +58,8 @@ export const ROOMS: Record<RoomId, RoomConfig> = {
     doors: [
       { side: 'left', leadsTo: 'plaza', label: 'Praça', emoji: '🏔️' },
     ],
-    npcCount: 2,
-    npcColors: ['#f97316', '#06b6d4'],
+    npcCount: 4,
+    npcColors: ['#f97316', '#06b6d4', '#84cc16', '#f43f5e'],
   },
   library: {
     id: 'library',
@@ -71,7 +71,7 @@ export const ROOMS: Record<RoomId, RoomConfig> = {
     doors: [
       { side: 'right', leadsTo: 'cafe', label: 'Café', emoji: '☕' },
     ],
-    npcCount: 2,
-    npcColors: ['#8b5cf6', '#ec4899'],
+    npcCount: 4,
+    npcColors: ['#8b5cf6', '#ec4899', '#0ea5e9', '#10b981'],
   },
 }

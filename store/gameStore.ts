@@ -97,8 +97,8 @@ export const useGameStore = create<GameState>((set) => ({
       const phrase = phraseTimer > 0 ? npc.phrase : null
 
       if (wanderTimer <= 0) {
-        targetX = (Math.random() - 0.5) * 12
-        targetZ = (Math.random() - 0.5) * 12
+        targetX = (Math.random() - 0.5) * 28
+        targetZ = (Math.random() - 0.5) * 28
         wanderTimer = 4 + Math.random() * 6
       }
 
