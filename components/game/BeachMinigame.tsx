@@ -36,7 +36,6 @@ export default function BeachMinigame({ onClose }: Props) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const storeTokens  = useGameStore((s) => s.tokens)
-  const setStoreTokens = useGameStore((s) => s.tokens) // read-only; we'll use set directly
 
   function start() {
     setPhase('playing')

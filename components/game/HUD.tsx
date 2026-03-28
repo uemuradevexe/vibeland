@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useGameStore } from '@/store/gameStore'
 import { ROOMS } from '@/lib/roomConfig'
 import { ORB_COLORS } from '@/lib/orbColors'
@@ -47,13 +47,13 @@ export default function HUD() {
   const dismissDailyBonus   = useGameStore((s) => s.dismissDailyBonus)
   const onlineRewardPending = useGameStore((s) => s.onlineRewardPending)
   const dismissOnlineReward = useGameStore((s) => s.dismissOnlineReward)
-  const remotePlayers       = useGameStore((s) => s.remotePlayers)
+  const onlineCount         = useGameStore((s) => Object.keys(s.remotePlayers).length) + 1
+  const wsConnected         = useGameStore((s) => s.wsConnected)
   const githubLevel         = useGameStore((s) => s.githubLevel)
   const githubUsername      = useGameStore((s) => s.githubUsername)
   const setGithubLevel      = useGameStore((s) => s.setGithubLevel)
   const pendingAchievement  = useGameStore((s) => s.pendingAchievement)
   const dismissAchievement  = useGameStore((s) => s.dismissAchievement)
-  const onlineCount         = Object.keys(remotePlayers).length + 1
 
   // Daily bonus toast
   useEffect(() => {
@@ -75,6 +75,15 @@ export default function HUD() {
       return () => clearTimeout(t)
     }
   }, [pendingAchievement, dismissAchievement])
+
+  // Online reward toast
+  useEffect(() => {
+    if (onlineRewardPending > 0) {
+      setShowOnlineToast(true)
+      const t = setTimeout(() => { setShowOnlineToast(false); dismissOnlineReward() }, 4000)
+      return () => clearTimeout(t)
+    }
+  }, [onlineRewardPending, dismissOnlineReward])
 
   // Prefill github input when modal opens
   useEffect(() => {
@@ -106,11 +115,13 @@ export default function HUD() {
   const pendingAchievementDef = pendingAchievement ? ACHIEVEMENTS[pendingAchievement] : null
 
   function handleSendChat() {
-    if (!chatInput.trim()) return
+    if (!chatInput.trim() || chatCooldown) return
     sendChat(chatInput.trim())
     playChat()
     setChatInput('')
     setShowEmotes(false)
+    setChatCooldown(true)
+    cooldownRef.current = setTimeout(() => setChatCooldown(false), 500)
   }
 
   function handleEmote(emote: string) {
@@ -125,11 +136,6 @@ export default function HUD() {
     setShowMap(false)
   }
 
-  function handleMute() {
-    const m = toggleMute()
-    setMuted(m)
-  }
-
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between">
       {/* Top bar */}
@@ -142,7 +148,9 @@ export default function HUD() {
           <span className="ml-3 text-[#3d6db5]">·</span>
           <span className="ml-3 text-[#5a7aa8] text-xs">{playerName}</span>
           <span className="ml-3 text-[#3d6db5]">·</span>
-          <span className="ml-2 text-[#5a9a58] text-xs">🟢 {onlineCount}</span>
+          <span className={`ml-2 text-xs ${wsConnected ? 'text-[#5a9a58]' : 'text-red-400'}`}>
+            {wsConnected ? `🟢 ${onlineCount}` : '🔴 offline'}
+          </span>
         </button>
         <div className="flex items-center gap-2">
           <button
@@ -309,6 +317,7 @@ export default function HUD() {
         <button
           onClick={() => { setShowEmotes(!showEmotes); setShowColors(false) }}
           className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-2.5 sm:p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          aria-label="Emotes"
         >
           😊
         </button>
@@ -341,12 +350,14 @@ export default function HUD() {
             backgroundColor: playerColor,
             boxShadow: `0 0 12px ${playerColor}88`,
           }}
+          aria-label="Change color"
         />
 
         {/* Wardrobe button */}
         <button
           onClick={() => { setShowWardrobe(true); setShowEmotes(false); setShowColors(false) }}
           className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-2.5 sm:p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          aria-label="Wardrobe"
         >
           👕
         </button>
@@ -355,6 +366,7 @@ export default function HUD() {
         <button
           onClick={() => { setShowAchievements(true); setShowEmotes(false); setShowColors(false) }}
           className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0"
+          aria-label="Achievements"
         >
           🏆
         </button>
@@ -363,8 +375,18 @@ export default function HUD() {
         <button
           onClick={() => setShowMap(!showMap)}
           className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-2.5 sm:p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          aria-label="Map"
         >
           🗺️
+        </button>
+
+        {/* Mute button */}
+        <button
+          onClick={() => { const m = toggleMute(); setMuted(m) }}
+          className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-2.5 sm:p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          aria-label={muted ? 'Unmute sounds' : 'Mute sounds'}
+        >
+          {muted ? '🔇' : '🔊'}
         </button>
 
         {/* Minigame button — beach only */}
@@ -372,6 +394,7 @@ export default function HUD() {
           <button
             onClick={() => setShowMinigame(true)}
             className="bg-[#1a3a20] border-2 border-[#f0c060] rounded-xl p-3 text-xl hover:bg-[#2a4a30] transition-colors flex-shrink-0 animate-pulse"
+            aria-label="Token Rush minigame"
             title="Token Rush — minijogo"
           >
             🎮
