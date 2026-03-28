@@ -129,7 +129,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   // Multiplayer
   setRemotePlayers: (players) => set({
     remotePlayers: Object.fromEntries(
-      players.map((p) => [p.id, { ...p, chatTimer: 0, emoteTimer: 0 }])
+      players.map((p) => [p.id, {
+        ...p,
+        chatTimer:  p.chat  ? 2 : 0,
+        emoteTimer: p.emote ? 1 : 0,
+      }])
     ),
   }),
 

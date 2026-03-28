@@ -55,6 +55,14 @@ export function useMultiplayer() {
           store.upsertRemotePlayer({ id: String(msg.id), emote: String(msg.emote), emoteTimer: 2 })
           break
 
+        case 'player_color_changed':
+          store.upsertRemotePlayer({ id: String(msg.id), color: String(msg.color) })
+          break
+
+        case 'player_equipped':
+          store.upsertRemotePlayer({ id: String(msg.id), hat: String(msg.hat), vehicle: String(msg.vehicle) })
+          break
+
         case 'player_left':
           store.removeRemotePlayer(String(msg.id))
           break
@@ -86,6 +94,12 @@ export function useMultiplayer() {
       }
       if (state.playerEmote && state.playerEmote !== prev.playerEmote) {
         ws.send(JSON.stringify({ type: 'emote', emote: state.playerEmote }))
+      }
+      if (state.playerColor !== prev.playerColor) {
+        ws.send(JSON.stringify({ type: 'color_change', color: state.playerColor }))
+      }
+      if (state.playerHat !== prev.playerHat || state.playerVehicle !== prev.playerVehicle) {
+        ws.send(JSON.stringify({ type: 'equip', hat: state.playerHat, vehicle: state.playerVehicle }))
       }
     })
 
