@@ -12,6 +12,10 @@ import DayNightCycle from './DayNightCycle'
 import { useGameStore } from '@/store/gameStore'
 import { useMultiplayer } from '@/hooks/useMultiplayer'
 
+// Drag tracking — prevents touch-end over HUD buttons from firing after a camera drag
+type DragState = { startX: number; startY: number; didDrag: boolean }
+export const dragStateRef = { current: { startX: 0, startY: 0, didDrag: false } as DragState }
+
 function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null)
   const smoothTarget = useRef(new THREE.Vector3(0, 0.8, 0))

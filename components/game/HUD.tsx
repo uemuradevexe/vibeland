@@ -5,6 +5,8 @@ import { useGameStore } from '@/store/gameStore'
 import { ROOMS } from '@/lib/roomConfig'
 import { ORB_COLORS } from '@/lib/orbColors'
 import WardrobeModal from '@/components/ui/WardrobeModal'
+import ProfileModal from '@/components/ui/ProfileModal'
+import BeachMinigame from '@/components/game/BeachMinigame'
 
 const EMOTES = ['❤️', '✨', '😂', '🤔', '👋', '🎉']
 
@@ -14,6 +16,8 @@ export default function HUD() {
   const [showColors, setShowColors] = useState(false)
   const [showMap, setShowMap] = useState(false)
   const [showWardrobe, setShowWardrobe] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
+  const [showMinigame, setShowMinigame] = useState(false)
   const [showDailyToast, setShowDailyToast] = useState(false)
 
   const sendChat = useGameStore((s) => s.sendChat)
@@ -50,14 +54,17 @@ export default function HUD() {
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between">
       {/* Top bar */}
-      <div className="pointer-events-none flex justify-between items-start pt-4 px-4">
-        <div className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-5 py-1.5 font-mono text-sm text-[#7a9cc8] backdrop-blur-sm">
+      <div className="pointer-events-auto flex justify-between items-start pt-4 px-4">
+        <button
+          onClick={() => setShowProfile(true)}
+          className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-5 py-1.5 font-mono text-sm text-[#7a9cc8] backdrop-blur-sm hover:border-[#3d6db5] transition-colors"
+        >
           {ROOMS[currentRoom].emoji} {ROOMS[currentRoom].name}
           <span className="ml-3 text-[#3d6db5]">·</span>
           <span className="ml-3 text-[#5a7aa8] text-xs">{playerName}</span>
           <span className="ml-3 text-[#3d6db5]">·</span>
           <span className="ml-2 text-[#5a9a58] text-xs">🟢 {onlineCount}</span>
-        </div>
+        </button>
         <div className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-4 py-1.5 font-mono text-sm text-yellow-400 backdrop-blur-sm">
           💰 {tokens}
         </div>
@@ -103,6 +110,12 @@ export default function HUD() {
 
       {/* Wardrobe modal */}
       {showWardrobe && <WardrobeModal onClose={() => setShowWardrobe(false)} />}
+
+      {/* Profile modal */}
+      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
+
+      {/* Beach minigame */}
+      {showMinigame && <BeachMinigame onClose={() => setShowMinigame(false)} />}
 
       {/* Bottom HUD */}
       <div className="pointer-events-auto p-3 flex items-end gap-2">
@@ -192,6 +205,17 @@ export default function HUD() {
         >
           🗺️
         </button>
+
+        {/* Minigame button — beach only */}
+        {currentRoom === 'beach' && (
+          <button
+            onClick={() => setShowMinigame(true)}
+            className="bg-[#1a3a20] border-2 border-[#f0c060] rounded-xl p-3 text-xl hover:bg-[#2a4a30] transition-colors flex-shrink-0 animate-pulse"
+            title="Token Rush — minijogo"
+          >
+            🎮
+          </button>
+        )}
       </div>
     </div>
   )
