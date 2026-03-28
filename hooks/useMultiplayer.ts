@@ -87,8 +87,12 @@ export function useMultiplayer() {
       }
     }
 
+    ws.onopen = () => useGameStore.setState({ wsConnected: true })
     ws.onerror = () => console.warn('[WS] connection error — is the server running?')
-    ws.onclose = () => useGameStore.getState().setRemotePlayers([])
+    ws.onclose = () => {
+      useGameStore.setState({ wsConnected: false })
+      useGameStore.getState().setRemotePlayers([])
+    }
 
     // ── Throttled position broadcast (~20 Hz) ───────────────────────────
     let lastX = 0, lastZ = 0
