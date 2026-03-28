@@ -34,8 +34,6 @@ export default function HUD() {
   const [showAchievementToast, setShowAchievementToast] = useState(false)
   const [showOnlineToast, setShowOnlineToast] = useState(false)
   const [muted, setMuted] = useState(false)
-  const [chatCooldown, setChatCooldown] = useState(false)
-  const cooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const sendChat    = useGameStore((s) => s.sendChat)
   const sendEmote   = useGameStore((s) => s.sendEmote)
