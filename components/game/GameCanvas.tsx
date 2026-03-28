@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import Room from './Room'
 import HUD from './HUD'
+import DayNightCycle from './DayNightCycle'
 import { useGameStore } from '@/store/gameStore'
 import { useMultiplayer } from '@/hooks/useMultiplayer'
 
@@ -56,8 +57,7 @@ export default function GameCanvas() {
         onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
       >
         <CameraRig />
-        <ambientLight intensity={0.4} />
-        <directionalLight position={[8, 16, 8]} intensity={0.7} />
+        <DayNightCycle />
         <Suspense fallback={null}>
           <Room />
         </Suspense>
