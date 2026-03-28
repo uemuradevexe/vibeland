@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { useGameStore } from '@/store/gameStore'
 import { ROOMS } from '@/lib/roomConfig'
 import { resolvePosition } from '@/lib/collision'
+import { playMove } from '@/lib/sounds'
 
 // Invisible horizontal plane — click to walk in XZ
 export default function GroundPlane() {
@@ -18,6 +19,7 @@ export default function GroundPlane() {
     const { currentRoom } = useGameStore.getState()
     ;[x, z] = resolvePosition(x, z, ROOMS[currentRoom].colliders)
     setPlayerTarget(x, z)
+    playMove()
   }
 
   return (

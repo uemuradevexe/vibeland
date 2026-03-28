@@ -54,6 +54,7 @@ export interface GameState {
   tokens: number
   inventory: string[]
   dailyBonusPending: number
+  onlineRewardPending: number
 
   // World
   currentRoom: RoomId
@@ -83,6 +84,7 @@ export interface GameState {
   buyItem: (itemId: string, cost: number) => boolean
   initPlayer: () => void
   dismissDailyBonus: () => void
+  dismissOnlineReward: () => void
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -101,6 +103,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   tokens: 0,
   inventory: ['none'],
   dailyBonusPending: 0,
+  onlineRewardPending: 0,
   currentRoom: 'plaza',
   npcs: [],
   remotePlayers: {},
@@ -281,4 +284,5 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   dismissDailyBonus: () => set({ dailyBonusPending: 0 }),
+  dismissOnlineReward: () => set({ onlineRewardPending: 0 }),
 }))

@@ -10,6 +10,7 @@ import Room from './Room'
 import HUD from './HUD'
 import { useGameStore } from '@/store/gameStore'
 import { useMultiplayer } from '@/hooks/useMultiplayer'
+import { useTokenRewards } from '@/hooks/useTokenRewards'
 
 function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null)
@@ -46,9 +47,10 @@ function CameraRig() {
 
 export default function GameCanvas() {
   useMultiplayer()
+  useTokenRewards()
 
   return (
-    <div className="w-screen h-screen relative">
+    <div className="w-screen h-screen relative" style={{ touchAction: 'none' }}>
       <Canvas
         className="absolute inset-0"
         gl={{ antialias: true }}
