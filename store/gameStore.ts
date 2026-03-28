@@ -85,6 +85,7 @@ export interface GameState {
   npcs: NPC[]
 
   // Multiplayer
+  wsConnected: boolean
   remotePlayers: Record<string, RemotePlayer>
 
   // Actions
@@ -109,6 +110,7 @@ export interface GameState {
   buyItem: (itemId: string, cost: number) => boolean
   initPlayer: () => void
   dismissDailyBonus: () => void
+  dismissOnlineReward: () => void
 
   // GitHub level
   setGithubLevel: (username: string, level: number, contributions: number) => void
@@ -136,6 +138,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   tokens: 0,
   inventory: ['none'],
   dailyBonusPending: 0,
+  onlineRewardPending: 0,
   githubUsername: '',
   githubLevel: 1,
   githubContributions: 0,
@@ -153,6 +156,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   pendingAchievement: null,
   currentRoom: 'plaza',
   npcs: [],
+  wsConnected: false,
   remotePlayers: {},
 
   setPlayer: (name, color) => set({ playerName: name, playerColor: color }),
@@ -395,6 +399,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   dismissDailyBonus: () => set({ dailyBonusPending: 0 }),
+  dismissOnlineReward: () => set({ onlineRewardPending: 0 }),
 
   // ── GitHub level ────────────────────────────────────────────────────
   setGithubLevel: (username, level, contributions) => {
