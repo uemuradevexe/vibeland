@@ -5,7 +5,8 @@ import { useGameStore } from '@/store/gameStore'
 import type { RemotePlayer } from '@/store/gameStore'
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:3001'
-const MOVE_HZ = 20   // position broadcast frequency
+const MOVE_HZ = 20        // position broadcast frequency
+const MOVE_THRESHOLD = 0.01 // skip tiny position changes
 
 export function useMultiplayer() {
   const wsRef = useRef<WebSocket | null>(null)
@@ -29,19 +30,30 @@ export function useMultiplayer() {
             color:   store.playerColor,
             hat:     store.playerHat,
             vehicle: store.playerVehicle,
+            avatar:  store.playerAvatar,
+            level:   store.githubLevel,
             room:    store.currentRoom,
           }))
           break
         }
 
         // Snapshot of everyone already in the room
-        case 'room_state':
-          store.setRemotePlayers(msg.players as RemotePlayer[])
+        case 'room_state': {
+          const players = msg.players as RemotePlayer[]
+          store.setRemotePlayers(players)
+          // Track seen players for social_butterfly achievement
+          for (const p of players) {
+            store.trackStat('seenPlayers', p.id)
+          }
           break
+        }
 
-        case 'player_joined':
-          store.upsertRemotePlayer(msg.player as RemotePlayer)
+        case 'player_joined': {
+          const p = msg.player as RemotePlayer
+          store.upsertRemotePlayer(p)
+          store.trackStat('seenPlayers', p.id)
           break
+        }
 
         case 'player_moved':
           store.upsertRemotePlayer({ id: String(msg.id), x: Number(msg.x), z: Number(msg.z), room: msg.room as RemotePlayer['room'] })
@@ -60,7 +72,13 @@ export function useMultiplayer() {
           break
 
         case 'player_equipped':
-          store.upsertRemotePlayer({ id: String(msg.id), hat: String(msg.hat), vehicle: String(msg.vehicle) })
+          store.upsertRemotePlayer({
+            id: String(msg.id),
+            hat: String(msg.hat),
+            vehicle: String(msg.vehicle),
+            avatar: msg.avatar !== undefined ? String(msg.avatar) : undefined,
+            level: msg.level !== undefined ? Number(msg.level) : undefined,
+          })
           break
 
         case 'player_left':
@@ -77,7 +95,9 @@ export function useMultiplayer() {
     const moveTimer = setInterval(() => {
       if (ws.readyState !== WebSocket.OPEN) return
       const { playerX, playerZ } = useGameStore.getState()
-      if (playerX === lastX && playerZ === lastZ) return
+      const dx = Math.abs(playerX - lastX)
+      const dz = Math.abs(playerZ - lastZ)
+      if (dx < MOVE_THRESHOLD && dz < MOVE_THRESHOLD) return
       lastX = playerX;  lastZ = playerZ
       ws.send(JSON.stringify({ type: 'move', x: playerX, z: playerZ }))
     }, 1000 / MOVE_HZ)
@@ -98,8 +118,19 @@ export function useMultiplayer() {
       if (state.playerColor !== prev.playerColor) {
         ws.send(JSON.stringify({ type: 'color_change', color: state.playerColor }))
       }
-      if (state.playerHat !== prev.playerHat || state.playerVehicle !== prev.playerVehicle) {
-        ws.send(JSON.stringify({ type: 'equip', hat: state.playerHat, vehicle: state.playerVehicle }))
+      if (
+        state.playerHat     !== prev.playerHat     ||
+        state.playerVehicle !== prev.playerVehicle ||
+        state.playerAvatar  !== prev.playerAvatar  ||
+        state.githubLevel   !== prev.githubLevel
+      ) {
+        ws.send(JSON.stringify({
+          type:    'equip',
+          hat:     state.playerHat,
+          vehicle: state.playerVehicle,
+          avatar:  state.playerAvatar,
+          level:   state.githubLevel,
+        }))
       }
     })
 

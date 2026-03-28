@@ -2,11 +2,22 @@ import { create } from 'zustand'
 import { ROOMS, type RoomId } from '@/lib/roomConfig'
 import { resolvePosition } from '@/lib/collision'
 import type { HatId, VehicleId } from '@/lib/skins'
+import type { AvatarId } from '@/lib/avatars'
 import {
   loadTokens, saveTokens, claimDailyBonus,
   loadEquipped, saveEquipped,
   loadInventory, saveInventory,
 } from '@/lib/tokenStore'
+import {
+  ACHIEVEMENTS,
+  loadAchievements, saveAchievements,
+  loadStats, saveStats,
+  defaultAchievementsState,
+  type AchievementId,
+  type AchievementsState,
+  type GameStats,
+} from '@/lib/achievements'
+import { getLevel, loadGithubLevel, saveGithubLevel } from '@/lib/githubLevel'
 
 export interface NPC {
   id: string
@@ -26,6 +37,8 @@ export interface RemotePlayer {
   color: string
   hat: string
   vehicle: string
+  avatar?: string
+  level?: number
   x: number
   z: number
   room: RoomId
@@ -51,10 +64,21 @@ export interface GameState {
   // Cosmetics
   playerHat: HatId
   playerVehicle: VehicleId
+  playerAvatar: AvatarId
   tokens: number
   inventory: string[]
   dailyBonusPending: number
   onlineRewardPending: number
+
+  // GitHub level
+  githubUsername: string
+  githubLevel: number
+  githubContributions: number
+
+  // Achievements
+  achievements: AchievementsState
+  gameStats: GameStats
+  pendingAchievement: AchievementId | null
 
   // World
   currentRoom: RoomId
@@ -81,10 +105,18 @@ export interface GameState {
   // Skins & tokens
   equipHat: (hat: HatId) => void
   equipVehicle: (vehicle: VehicleId) => void
+  equipAvatar: (avatar: AvatarId) => void
   buyItem: (itemId: string, cost: number) => boolean
   initPlayer: () => void
   dismissDailyBonus: () => void
-  dismissOnlineReward: () => void
+
+  // GitHub level
+  setGithubLevel: (username: string, level: number, contributions: number) => void
+
+  // Achievements
+  checkAchievements: () => void
+  trackStat: (key: keyof GameStats, value: string | number | boolean) => void
+  dismissAchievement: () => void
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -100,10 +132,25 @@ export const useGameStore = create<GameState>((set, get) => ({
   playerEmoteTimer: 0,
   playerHat: 'none',
   playerVehicle: 'none',
+  playerAvatar: 'default',
   tokens: 0,
   inventory: ['none'],
   dailyBonusPending: 0,
-  onlineRewardPending: 0,
+  githubUsername: '',
+  githubLevel: 1,
+  githubContributions: 0,
+  achievements: defaultAchievementsState(),
+  gameStats: {
+    roomsVisited: [],
+    roomSwitches: 0,
+    messagesSent: 0,
+    emotesUsed: {},
+    emotesCount: 0,
+    loginCount: 0,
+    dailyBonusClaimed: 0,
+    seenPlayers: [],
+  },
+  pendingAchievement: null,
   currentRoom: 'plaza',
   npcs: [],
   remotePlayers: {},
@@ -112,20 +159,51 @@ export const useGameStore = create<GameState>((set, get) => ({
   setPlayerColor: (color) => set({ playerColor: color }),
   setPlayerTarget: (x, z) => set({ playerTargetX: x, playerTargetZ: z }),
 
-  sendChat: (message) => set({ playerChat: message, playerChatTimer: 4 }),
-  sendEmote: (emote) => set({ playerEmote: emote, playerEmoteTimer: 2 }),
+  sendChat: (message) => {
+    const { gameStats } = get()
+    const newStats: GameStats = { ...gameStats, messagesSent: gameStats.messagesSent + 1 }
+    saveStats(newStats)
+    set({ playerChat: message, playerChatTimer: 4, gameStats: newStats })
+    get().checkAchievements()
+  },
 
-  changeRoom: (room) => set({
-    currentRoom: room,
-    playerX: 0,
-    playerZ: 0,
-    playerTargetX: 0,
-    playerTargetZ: 0,
-    npcs: [],
-    playerChat: null,
-    playerEmote: null,
-    remotePlayers: {},
-  }),
+  sendEmote: (emote) => {
+    const { gameStats } = get()
+    const newStats: GameStats = {
+      ...gameStats,
+      emotesUsed: { ...gameStats.emotesUsed, [emote]: true },
+      emotesCount: gameStats.emotesCount + 1,
+    }
+    saveStats(newStats)
+    set({ playerEmote: emote, playerEmoteTimer: 2, gameStats: newStats })
+    get().checkAchievements()
+  },
+
+  changeRoom: (room) => {
+    const { gameStats } = get()
+    const roomsVisited = gameStats.roomsVisited.includes(room)
+      ? gameStats.roomsVisited
+      : [...gameStats.roomsVisited, room]
+    const newStats: GameStats = {
+      ...gameStats,
+      roomsVisited,
+      roomSwitches: gameStats.roomSwitches + 1,
+    }
+    saveStats(newStats)
+    set({
+      currentRoom: room,
+      playerX: 0,
+      playerZ: 0,
+      playerTargetX: 0,
+      playerTargetZ: 0,
+      npcs: [],
+      playerChat: null,
+      playerEmote: null,
+      remotePlayers: {},
+      gameStats: newStats,
+    })
+    get().checkAchievements()
+  },
 
   setNPCs: (npcs) => set({ npcs }),
 
@@ -143,6 +221,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   upsertRemotePlayer: (partial) => set((state) => {
     const existing = state.remotePlayers[partial.id] ?? {
       id: partial.id, name: '?', color: '#888', hat: 'none', vehicle: 'none',
+      avatar: 'default', level: 1,
       x: 0, z: 0, room: state.currentRoom, chat: null, chatTimer: 0, emote: null, emoteTimer: 0,
     } as RemotePlayer
     const updated: RemotePlayer = {
@@ -248,12 +327,19 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { playerVehicle } = get()
     saveEquipped(hat, playerVehicle)
     set({ playerHat: hat })
+    get().checkAchievements()
   },
 
   equipVehicle: (vehicle) => {
     const { playerHat } = get()
     saveEquipped(playerHat, vehicle)
     set({ playerVehicle: vehicle })
+    get().checkAchievements()
+  },
+
+  equipAvatar: (avatar) => {
+    set({ playerAvatar: avatar })
+    get().checkAchievements()
   },
 
   buyItem: (itemId, cost) => {
@@ -264,6 +350,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     saveTokens(newTokens)
     saveInventory(newInventory)
     set({ tokens: newTokens, inventory: newInventory })
+    get().checkAchievements()
     return true
   },
 
@@ -274,15 +361,99 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (bonus > 0) saveTokens(finalTokens)
     const equipped = loadEquipped()
     const inventory = loadInventory()
+    const achievements = loadAchievements()
+    const gameStats = loadStats()
+
+    // Track login count
+    const newStats: GameStats = { ...gameStats, loginCount: gameStats.loginCount + 1 }
+    if (bonus > 0) newStats.dailyBonusClaimed = gameStats.dailyBonusClaimed + 1
+    saveStats(newStats)
+
+    // Track initial room visit
+    if (!newStats.roomsVisited.includes('plaza')) {
+      newStats.roomsVisited = [...newStats.roomsVisited, 'plaza']
+      saveStats(newStats)
+    }
+
+    // Load github level from localStorage
+    const githubData = loadGithubLevel()
+
     set({
       tokens: finalTokens,
       dailyBonusPending: bonus,
       playerHat: equipped.hat as HatId,
       playerVehicle: equipped.vehicle as VehicleId,
       inventory,
+      achievements,
+      gameStats: newStats,
+      githubUsername: githubData?.username ?? '',
+      githubLevel: githubData?.level ?? 1,
+      githubContributions: githubData?.contributions ?? 0,
     })
+
+    get().checkAchievements()
   },
 
   dismissDailyBonus: () => set({ dailyBonusPending: 0 }),
-  dismissOnlineReward: () => set({ onlineRewardPending: 0 }),
+
+  // ── GitHub level ────────────────────────────────────────────────────
+  setGithubLevel: (username, level, contributions) => {
+    saveGithubLevel({ username, level, contributions })
+    set({ githubUsername: username, githubLevel: level, githubContributions: contributions })
+  },
+
+  // ── Achievements ────────────────────────────────────────────────────
+  checkAchievements: () => {
+    const { achievements, gameStats, tokens, inventory, playerAvatar } = get()
+    const newAchievements = { ...achievements }
+    let firstNew: AchievementId | null = null
+
+    function check(id: AchievementId, progress: number) {
+      const ach = newAchievements[id]
+      if (ach.unlocked) return
+      const newProg = Math.min(progress, ACHIEVEMENTS[id].maxProgress)
+      if (newProg !== ach.progress || newProg >= ACHIEVEMENTS[id].maxProgress) {
+        newAchievements[id] = { ...ach, progress: newProg }
+        if (newProg >= ACHIEVEMENTS[id].maxProgress && !ach.unlocked) {
+          newAchievements[id].unlocked = true
+          newAchievements[id].unlockedAt = new Date().toISOString()
+          if (!firstNew) firstNew = id
+        }
+      }
+    }
+
+    check('first_steps', gameStats.roomsVisited.length)
+    check('world_traveler', gameStats.roomSwitches)
+    check('chatterbox', gameStats.messagesSent)
+    check('party_starter', Object.keys(gameStats.emotesUsed).length)
+    check('fashionista', inventory.filter(i => i !== 'none').length)
+    check('driver', inventory.includes('skateboard') ? 1 : 0)
+    check('token_saver', tokens)
+    check('daily_login', gameStats.dailyBonusClaimed)
+    check('veteran', gameStats.loginCount)
+    check('emote_master', gameStats.emotesCount)
+    check('social_butterfly', gameStats.seenPlayers.length)
+    const avatarCount = (['turtle', 'elephant', 'lizard', 'penguin'] as AvatarId[]).filter(
+      a => a === playerAvatar || inventory.includes(a)
+    ).length
+    check('avatar_collector', avatarCount)
+
+    saveAchievements(newAchievements)
+    set({ achievements: newAchievements, pendingAchievement: firstNew ?? get().pendingAchievement })
+  },
+
+  trackStat: (key, value) => {
+    const { gameStats } = get()
+    const newStats = { ...gameStats }
+    if (key === 'seenPlayers' && typeof value === 'string') {
+      if (!newStats.seenPlayers.includes(value)) {
+        newStats.seenPlayers = [...newStats.seenPlayers, value]
+      }
+    }
+    saveStats(newStats)
+    set({ gameStats: newStats })
+    get().checkAchievements()
+  },
+
+  dismissAchievement: () => set({ pendingAchievement: null }),
 }))

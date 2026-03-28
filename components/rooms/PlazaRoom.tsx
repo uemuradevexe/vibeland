@@ -3,6 +3,8 @@
 import { ROOMS } from '@/lib/roomConfig'
 import Door from '@/components/game/Door'
 import GroundPlane from '@/components/game/GroundPlane'
+import AdsBillboard from '@/components/game/AdsBillboard'
+import SittableObject from '@/components/game/SittableObject'
 
 const room = ROOMS.plaza
 
@@ -85,12 +87,12 @@ export default function PlazaRoom() {
         <pointLight position={[0, 0.6, 0]} color="#0ea5e9" intensity={1.2} distance={7} />
       </group>
 
-      {/* Park benches */}
+      {/* Park benches — click to sit */}
       {[
         [-4, -4, 0], [4, -4, Math.PI / 2], [-4, 4, Math.PI], [4, 4, -Math.PI / 2],
         [-10, 0, 0], [10, 0, Math.PI], [0, -10, Math.PI / 2], [0, 10, -Math.PI / 2],
       ].map(([bx, bz, ry], i) => (
-        <group key={i} position={[bx, 0, bz]} rotation={[0, ry, 0]}>
+        <SittableObject key={i} position={[bx, 0, bz]} rotation={ry}>
           <mesh position={[0, 0.3, 0]}>
             <boxGeometry args={[1.4, 0.1, 0.45]} />
             <meshStandardMaterial color="#5c3310" />
@@ -105,7 +107,7 @@ export default function PlazaRoom() {
               <meshStandardMaterial color="#4a2808" />
             </mesh>
           ))}
-        </group>
+        </SittableObject>
       ))}
 
       {/* Buildings */}
@@ -177,6 +179,10 @@ export default function PlazaRoom() {
           <meshStandardMaterial color="#c8d8f0" emissive="#c8d8f0" emissiveIntensity={1} toneMapped={false} />
         </mesh>
       ))}
+
+      {/* Ads billboards */}
+      <AdsBillboard position={[-18, 0, -5]} rotateSpeed={0} />
+      <AdsBillboard position={[18, 0, 5]} rotateSpeed={0} />
 
       {/* Doors */}
       {room.doors.map((door) => (

@@ -6,6 +6,8 @@ import PlazaRoom from '@/components/rooms/PlazaRoom'
 import CafeRoom from '@/components/rooms/CafeRoom'
 import BeachRoom from '@/components/rooms/BeachRoom'
 import LibraryRoom from '@/components/rooms/LibraryRoom'
+import ArcadeRoom from '@/components/rooms/ArcadeRoom'
+import GardenRoom from '@/components/rooms/GardenRoom'
 import ClaudeOrb from './ClaudeOrb'
 import NPCManager from './NPCManager'
 import RemotePlayers from './RemotePlayers'
@@ -15,6 +17,8 @@ const ROOM_COMPONENTS = {
   cafe: CafeRoom,
   beach: BeachRoom,
   library: LibraryRoom,
+  arcade: ArcadeRoom,
+  garden: GardenRoom,
 }
 
 export default function Room() {

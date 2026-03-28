@@ -8,6 +8,8 @@ interface PlayerState {
   color: string
   hat: string
   vehicle: string
+  avatar: string
+  level: number
   x: number
   z: number
   room: RoomId
@@ -15,12 +17,14 @@ interface PlayerState {
   emote: string | null
 }
 
-// Valid IDs kept in sync with lib/skins.ts
+// Valid IDs kept in sync with lib/skins.ts and lib/avatars.ts
 const VALID_HATS     = new Set(['none', 'tophat', 'crown', 'cap', 'cowboy', 'wizard'])
 const VALID_VEHICLES = new Set(['none', 'skateboard'])
+const VALID_AVATARS  = new Set(['default', 'turtle', 'elephant', 'lizard', 'penguin'])
 
 function validHat(v: unknown)     { return VALID_HATS.has(String(v))     ? String(v) : 'none' }
 function validVehicle(v: unknown) { return VALID_VEHICLES.has(String(v)) ? String(v) : 'none' }
+function validAvatar(v: unknown)  { return VALID_AVATARS.has(String(v))  ? String(v) : 'default' }
 
 const PORT = Number(process.env.WS_PORT ?? 3001)
 const wss = new WebSocketServer({ port: PORT })
@@ -77,6 +81,8 @@ wss.on('connection', (ws) => {
         color:   String(msg.color || '#ea580c'),
         hat:     validHat(msg.hat),
         vehicle: validVehicle(msg.vehicle),
+        avatar:  validAvatar(msg.avatar),
+        level:   Math.max(1, Math.min(10, Number(msg.level) || 1)),
         x: 0, z: 0,
         room:  (msg.room as RoomId) || 'plaza',
         chat:  null,
@@ -129,7 +135,16 @@ wss.on('connection', (ws) => {
       case 'equip': {
         player.hat     = validHat(msg.hat)
         player.vehicle = validVehicle(msg.vehicle)
-        broadcastToRoom(player.room, { type: 'player_equipped', id, hat: player.hat, vehicle: player.vehicle }, ws)
+        player.avatar  = validAvatar(msg.avatar)
+        player.level   = Math.max(1, Math.min(10, Number(msg.level) || 1))
+        broadcastToRoom(player.room, {
+          type: 'player_equipped',
+          id,
+          hat: player.hat,
+          vehicle: player.vehicle,
+          avatar: player.avatar,
+          level: player.level,
+        }, ws)
         break
       }
 

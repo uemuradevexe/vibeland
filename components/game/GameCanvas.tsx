@@ -8,9 +8,14 @@ import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import Room from './Room'
 import HUD from './HUD'
+import DayNightCycle from './DayNightCycle'
 import { useGameStore } from '@/store/gameStore'
 import { useMultiplayer } from '@/hooks/useMultiplayer'
 import { useTokenRewards } from '@/hooks/useTokenRewards'
+
+// Drag tracking — prevents touch-end over HUD buttons from firing after a camera drag
+type DragState = { startX: number; startY: number; didDrag: boolean }
+export const dragStateRef = { current: { startX: 0, startY: 0, didDrag: false } as DragState }
 
 function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null)
@@ -41,6 +46,15 @@ function CameraRig() {
       maxDistance={55}
       rotateSpeed={0.6}
       zoomSpeed={0.8}
+      mouseButtons={{
+        LEFT: THREE.MOUSE.ROTATE,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE,
+      }}
+      touches={{
+        ONE: THREE.TOUCH.ROTATE,
+        TWO: THREE.TOUCH.DOLLY_PAN,
+      }}
     />
   )
 }
@@ -50,16 +64,26 @@ export default function GameCanvas() {
   useTokenRewards()
 
   return (
-    <div className="w-screen h-screen relative" style={{ touchAction: 'none' }}>
+    <div
+      className="w-screen h-screen relative"
+      onPointerDown={(e) => {
+        dragStateRef.current = { startX: e.clientX, startY: e.clientY, didDrag: false }
+      }}
+      onPointerMove={(e) => {
+        const dx = Math.abs(e.clientX - dragStateRef.current.startX)
+        const dy = Math.abs(e.clientY - dragStateRef.current.startY)
+        if (dx > 5 || dy > 5) dragStateRef.current.didDrag = true
+      }}
+    >
       <Canvas
         className="absolute inset-0"
         gl={{ antialias: true }}
         camera={{ position: [16, 13, 16], fov: 42, near: 0.1, far: 300 }}
         onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
+        style={{ touchAction: 'none' }}
       >
         <CameraRig />
-        <ambientLight intensity={0.4} />
-        <directionalLight position={[8, 16, 8]} intensity={0.7} />
+        <DayNightCycle />
         <Suspense fallback={null}>
           <Room />
         </Suspense>
