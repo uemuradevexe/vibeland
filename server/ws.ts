@@ -1,6 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws'
 
-type RoomId = 'plaza' | 'cafe' | 'beach' | 'library'
+type RoomId = 'plaza' | 'cafe' | 'beach' | 'library' | 'arcade' | 'garden' | 'rooftop' | 'dungeon' | 'space'
 
 interface PlayerState {
   id: string
@@ -18,8 +18,8 @@ interface PlayerState {
 }
 
 // Valid IDs kept in sync with lib/skins.ts and lib/avatars.ts
-const VALID_HATS     = new Set(['none', 'tophat', 'crown', 'cap', 'cowboy', 'wizard'])
-const VALID_VEHICLES = new Set(['none', 'skateboard'])
+const VALID_HATS     = new Set(['none', 'tophat', 'crown', 'cap', 'cowboy', 'wizard', 'viking', 'halo', 'pirate', 'alien'])
+const VALID_VEHICLES = new Set(['none', 'skateboard', 'hoverboard', 'cloud'])
 const VALID_AVATARS  = new Set(['default', 'turtle', 'elephant', 'lizard', 'penguin'])
 
 function validHat(v: unknown)     { return VALID_HATS.has(String(v))     ? String(v) : 'none' }

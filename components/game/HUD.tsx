@@ -10,6 +10,7 @@ import BeachMinigame from '@/components/game/BeachMinigame'
 import AchievementsModal from '@/components/ui/AchievementsModal'
 import { getLevel } from '@/lib/githubLevel'
 import { ACHIEVEMENTS } from '@/lib/achievements'
+import { playChat, playEmote, playRoomChange, toggleMute, isMuted } from '@/lib/sounds'
 
 const EMOTES = [
   '❤️', '✨', '😂', '🤔', '👋', '🎉',
@@ -31,6 +32,8 @@ export default function HUD() {
   const [githubLoading, setGithubLoading] = useState(false)
   const [githubError, setGithubError] = useState<string | null>(null)
   const [showAchievementToast, setShowAchievementToast] = useState(false)
+  const [showOnlineToast, setShowOnlineToast] = useState(false)
+  const [muted, setMuted] = useState(false)
 
   const sendChat    = useGameStore((s) => s.sendChat)
   const sendEmote   = useGameStore((s) => s.sendEmote)
