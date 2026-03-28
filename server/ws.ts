@@ -6,6 +6,8 @@ interface PlayerState {
   id: string
   name: string
   color: string
+  hat: string
+  vehicle: string
   x: number
   z: number
   room: RoomId
@@ -13,7 +15,8 @@ interface PlayerState {
   emote: string | null
 }
 
-const wss = new WebSocketServer({ port: 3001 })
+const PORT = Number(process.env.WS_PORT ?? 3001)
+const wss = new WebSocketServer({ port: PORT })
 const players = new Map<WebSocket, PlayerState>()
 let nextId = 1
 
@@ -42,8 +45,10 @@ wss.on('connection', (ws) => {
     if (msg.type === 'join') {
       const state: PlayerState = {
         id,
-        name:  String(msg.name  || 'Anon').slice(0, 24),
-        color: String(msg.color || '#ea580c'),
+        name:    String(msg.name    || 'Anon').slice(0, 24),
+        color:   String(msg.color   || '#ea580c'),
+        hat:     String(msg.hat     || 'none'),
+        vehicle: String(msg.vehicle || 'none'),
         x: 0, z: 0,
         room:  (msg.room as RoomId) || 'plaza',
         chat:  null,
@@ -68,7 +73,7 @@ wss.on('connection', (ws) => {
       case 'move':
         player.x = Number(msg.x) || 0
         player.z = Number(msg.z) || 0
-        broadcastToRoom(player.room, { type: 'player_moved', id, x: player.x, z: player.z }, ws)
+        broadcastToRoom(player.room, { type: 'player_moved', id, x: player.x, z: player.z, room: player.room }, ws)
         break
 
       // ── chat ────────────────────────────────────────────────────────────
@@ -118,5 +123,4 @@ wss.on('connection', (ws) => {
   })
 })
 
-const PORT = Number(process.env.WS_PORT ?? 3001)
 console.log(`🌐  WS server  →  ws://localhost:${PORT}`)

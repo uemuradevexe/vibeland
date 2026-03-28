@@ -2,6 +2,7 @@
 
 import { useGameStore } from '@/store/gameStore'
 import ClaudeOrb from './ClaudeOrb'
+import type { HatId, VehicleId } from '@/lib/skins'
 
 export default function RemotePlayers() {
   const remotePlayers = useGameStore((s) => s.remotePlayers)
@@ -20,6 +21,8 @@ export default function RemotePlayers() {
             name={p.name}
             chat={p.chat}
             emote={p.emote}
+            hat={p.hat as HatId}
+            vehicle={p.vehicle as VehicleId}
           />
         ))}
     </>

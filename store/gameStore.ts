@@ -24,6 +24,8 @@ export interface RemotePlayer {
   id: string
   name: string
   color: string
+  hat: string
+  vehicle: string
   x: number
   z: number
   room: RoomId
@@ -133,8 +135,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   upsertRemotePlayer: (partial) => set((state) => {
     const existing = state.remotePlayers[partial.id] ?? {
-      id: partial.id, name: '?', color: '#888', x: 0, z: 0,
-      room: state.currentRoom, chat: null, chatTimer: 0, emote: null, emoteTimer: 0,
+      id: partial.id, name: '?', color: '#888', hat: 'none', vehicle: 'none',
+      x: 0, z: 0, room: state.currentRoom, chat: null, chatTimer: 0, emote: null, emoteTimer: 0,
     } as RemotePlayer
     const updated: RemotePlayer = {
       ...existing,
