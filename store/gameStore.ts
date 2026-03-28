@@ -85,6 +85,7 @@ export interface GameState {
   npcs: NPC[]
 
   // Multiplayer
+  wsConnected: boolean
   remotePlayers: Record<string, RemotePlayer>
 
   // Actions
@@ -155,6 +156,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   pendingAchievement: null,
   currentRoom: 'plaza',
   npcs: [],
+  wsConnected: false,
   remotePlayers: {},
 
   setPlayer: (name, color) => set({ playerName: name, playerColor: color }),

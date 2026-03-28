@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
@@ -116,7 +116,7 @@ export default function ClaudeOrb({
 
   // Generate static particle positions — orbiting via group rotation
   const particleCount = Math.min(auraConfig.particleCount, 20)
-  const particles = Array.from({ length: particleCount }, (_, i) => {
+  const particles = useMemo(() => Array.from({ length: particleCount }, (_, i) => {
     const angle = (i / particleCount) * Math.PI * 2
     const r = 0.75 + (i % 3) * 0.15
     const py = 0.8 + (i % 5) * 0.22
@@ -126,7 +126,7 @@ export default function ClaudeOrb({
         <meshStandardMaterial color={auraColor} emissive={auraColor} emissiveIntensity={2.2} toneMapped={false} />
       </mesh>
     )
-  })
+  }), [particleCount, auraColor])
 
   return (
     <group position={[x, 0, z]} scale={[scale, scale, scale]}>
