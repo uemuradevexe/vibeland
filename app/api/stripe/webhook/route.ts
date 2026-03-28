@@ -12,7 +12,8 @@ export async function POST(req: NextRequest) {
     const Stripe = (await import('stripe')).default
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-01-27.acacia' as never })
 
-    const sig = req.headers.get('stripe-signature')!
+    const sig = req.headers.get('stripe-signature')
+    if (!sig) return NextResponse.json({ error: 'Missing stripe-signature' }, { status: 400 })
     const body = await req.text()
     const event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET)
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true })
   } catch (e) {
-    console.error('[stripe webhook]', e)
+    console.error('[stripe webhook]', e instanceof Error ? e.message : 'unknown error')
     return NextResponse.json({ error: 'webhook error' }, { status: 400 })
   }
 }
