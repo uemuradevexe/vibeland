@@ -45,6 +45,15 @@ function CameraRig() {
       maxDistance={55}
       rotateSpeed={0.6}
       zoomSpeed={0.8}
+      mouseButtons={{
+        LEFT: THREE.MOUSE.ROTATE,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE,
+      }}
+      touches={{
+        ONE: THREE.TOUCH.ROTATE,
+        TWO: THREE.TOUCH.DOLLY_PAN,
+      }}
     />
   )
 }
@@ -53,12 +62,23 @@ export default function GameCanvas() {
   useMultiplayer()
 
   return (
-    <div className="w-screen h-screen relative">
+    <div
+      className="w-screen h-screen relative"
+      onPointerDown={(e) => {
+        dragStateRef.current = { startX: e.clientX, startY: e.clientY, didDrag: false }
+      }}
+      onPointerMove={(e) => {
+        const dx = Math.abs(e.clientX - dragStateRef.current.startX)
+        const dy = Math.abs(e.clientY - dragStateRef.current.startY)
+        if (dx > 5 || dy > 5) dragStateRef.current.didDrag = true
+      }}
+    >
       <Canvas
         className="absolute inset-0"
         gl={{ antialias: true }}
         camera={{ position: [16, 13, 16], fov: 42, near: 0.1, far: 300 }}
         onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
+        style={{ touchAction: 'none' }}
       >
         <CameraRig />
         <DayNightCycle />
