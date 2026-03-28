@@ -68,6 +68,7 @@ export interface GameState {
   tokens: number
   inventory: string[]
   dailyBonusPending: number
+  onlineRewardPending: number
 
   // GitHub level
   githubUsername: string

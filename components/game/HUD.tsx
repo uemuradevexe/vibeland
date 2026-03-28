@@ -11,13 +11,16 @@ import AchievementsModal from '@/components/ui/AchievementsModal'
 import { getLevel } from '@/lib/githubLevel'
 import { ACHIEVEMENTS } from '@/lib/achievements'
 
-const EMOTES = ['❤️', '✨', '😂', '🤔', '👋', '🎉']
+const EMOTES = [
+  '❤️', '✨', '😂', '🤔', '👋', '🎉',
+  '💃', '😴', '🤖', '🧠', '🔥', '😎',
+]
 
 export default function HUD() {
-  const [chatInput, setChatInput] = useState('')
-  const [showEmotes, setShowEmotes] = useState(false)
-  const [showColors, setShowColors] = useState(false)
-  const [showMap, setShowMap] = useState(false)
+  const [chatInput, setChatInput]     = useState('')
+  const [showEmotes, setShowEmotes]   = useState(false)
+  const [showColors, setShowColors]   = useState(false)
+  const [showMap, setShowMap]         = useState(false)
   const [showWardrobe, setShowWardrobe] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [showMinigame, setShowMinigame] = useState(false)
@@ -29,16 +32,18 @@ export default function HUD() {
   const [githubError, setGithubError] = useState<string | null>(null)
   const [showAchievementToast, setShowAchievementToast] = useState(false)
 
-  const sendChat = useGameStore((s) => s.sendChat)
-  const sendEmote = useGameStore((s) => s.sendEmote)
+  const sendChat    = useGameStore((s) => s.sendChat)
+  const sendEmote   = useGameStore((s) => s.sendEmote)
   const playerColor = useGameStore((s) => s.playerColor)
   const setPlayerColor = useGameStore((s) => s.setPlayerColor)
-  const currentRoom = useGameStore((s) => s.currentRoom)
-  const changeRoom = useGameStore((s) => s.changeRoom)
+  const currentRoom    = useGameStore((s) => s.currentRoom)
+  const changeRoom     = useGameStore((s) => s.changeRoom)
   const playerName          = useGameStore((s) => s.playerName)
   const tokens              = useGameStore((s) => s.tokens)
   const dailyBonusPending   = useGameStore((s) => s.dailyBonusPending)
   const dismissDailyBonus   = useGameStore((s) => s.dismissDailyBonus)
+  const onlineRewardPending = useGameStore((s) => s.onlineRewardPending)
+  const dismissOnlineReward = useGameStore((s) => s.dismissOnlineReward)
   const remotePlayers       = useGameStore((s) => s.remotePlayers)
   const githubLevel         = useGameStore((s) => s.githubLevel)
   const githubUsername      = useGameStore((s) => s.githubUsername)
@@ -47,13 +52,11 @@ export default function HUD() {
   const dismissAchievement  = useGameStore((s) => s.dismissAchievement)
   const onlineCount         = Object.keys(remotePlayers).length + 1
 
+  // Daily bonus toast
   useEffect(() => {
     if (dailyBonusPending > 0) {
       setShowDailyToast(true)
-      const t = setTimeout(() => {
-        setShowDailyToast(false)
-        dismissDailyBonus()
-      }, 4000)
+      const t = setTimeout(() => { setShowDailyToast(false); dismissDailyBonus() }, 4000)
       return () => clearTimeout(t)
     }
   }, [dailyBonusPending, dismissDailyBonus])
@@ -102,8 +105,26 @@ export default function HUD() {
   function handleSendChat() {
     if (!chatInput.trim()) return
     sendChat(chatInput.trim())
+    playChat()
     setChatInput('')
     setShowEmotes(false)
+  }
+
+  function handleEmote(emote: string) {
+    sendEmote(emote)
+    playEmote()
+    setShowEmotes(false)
+  }
+
+  function handleChangeRoom(roomId: Parameters<typeof changeRoom>[0]) {
+    changeRoom(roomId)
+    playRoomChange()
+    setShowMap(false)
+  }
+
+  function handleMute() {
+    const m = toggleMute()
+    setMuted(m)
   }
 
   return (
@@ -134,10 +155,15 @@ export default function HUD() {
         </div>
       </div>
 
-      {/* Daily login bonus toast */}
+      {/* Toasts */}
       {showDailyToast && (
-        <div className="pointer-events-none absolute top-16 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-black font-mono text-sm font-bold px-5 py-2 rounded-full shadow-lg animate-bounce z-50">
-          🎁 +{dailyBonusPending} tokens — daily login!
+        <div className="pointer-events-none absolute top-16 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-black font-mono text-sm font-bold px-5 py-2 rounded-full shadow-lg animate-bounce z-50 whitespace-nowrap">
+          🎁 +{dailyBonusPending} tokens — login diário!
+        </div>
+      )}
+      {showOnlineToast && (
+        <div className="pointer-events-none absolute top-16 left-1/2 -translate-x-1/2 bg-green-500/90 text-black font-mono text-sm font-bold px-5 py-2 rounded-full shadow-lg animate-bounce z-50 whitespace-nowrap">
+          ⏱️ +{onlineRewardPending} tokens — online reward!
         </div>
       )}
 
@@ -156,7 +182,7 @@ export default function HUD() {
           onClick={() => setShowMap(false)}
         >
           <div
-            className="bg-[#111e38] border-2 border-[#2a4a7f] rounded-xl p-6 min-w-64"
+            className="bg-[#111e38] border-2 border-[#2a4a7f] rounded-xl p-6 w-64"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="font-mono font-bold text-center mb-4 text-[#7a9cc8]">🗺️ Mapa</h2>
@@ -164,7 +190,7 @@ export default function HUD() {
               {Object.values(ROOMS).map((room) => (
                 <button
                   key={room.id}
-                  onClick={() => { changeRoom(room.id); setShowMap(false) }}
+                  onClick={() => handleChangeRoom(room.id)}
                   className={`flex items-center gap-3 px-4 py-2 rounded-lg font-mono text-sm transition-all ${
                     currentRoom === room.id
                       ? 'bg-[#1e3a8a] border border-[#3d6db5] text-white'
@@ -238,17 +264,21 @@ export default function HUD() {
       )}
 
       {/* Bottom HUD */}
-      <div className="pointer-events-auto p-3 flex items-end gap-2">
-        {/* Emotes popup */}
+      <div className="pointer-events-auto p-2 sm:p-3 flex items-end gap-1.5 sm:gap-2 overflow-x-auto">
+        {/* Emotes popup — 4×3 grid */}
         {showEmotes && (
-          <div className="absolute bottom-16 left-3 bg-[#111e38] border-2 border-[#2a4a7f] rounded-xl p-3 flex gap-2 flex-wrap w-48">
-            {EMOTES.map((emote) => (
+          <div className="absolute bottom-16 sm:bottom-[4.5rem] left-2 bg-[#111e38] border-2 border-[#2a4a7f] rounded-xl p-3 grid grid-cols-4 gap-2 w-52">
+            {EMOTES.map((emote, i) => (
               <button
                 key={emote}
-                onClick={() => { sendEmote(emote); setShowEmotes(false) }}
-                className="text-2xl hover:scale-125 transition-transform"
+                onClick={() => handleEmote(emote)}
+                className="text-2xl hover:scale-125 transition-transform relative"
+                title={`${emote} [${i + 1}]`}
               >
                 {emote}
+                {i < 9 && (
+                  <span className="absolute -top-1 -right-1 text-[8px] text-[#3d6db5] font-mono">{i + 1}</span>
+                )}
               </button>
             ))}
           </div>
@@ -256,7 +286,7 @@ export default function HUD() {
 
         {/* Color picker popup */}
         {showColors && (
-          <div className="absolute bottom-16 left-12 bg-[#111e38] border-2 border-[#2a4a7f] rounded-xl p-3 grid grid-cols-4 gap-2">
+          <div className="absolute bottom-16 sm:bottom-[4.5rem] left-12 bg-[#111e38] border-2 border-[#2a4a7f] rounded-xl p-3 grid grid-cols-4 gap-2">
             {ORB_COLORS.map((c) => (
               <button
                 key={c.value}
@@ -275,7 +305,7 @@ export default function HUD() {
         {/* Emote button */}
         <button
           onClick={() => { setShowEmotes(!showEmotes); setShowColors(false) }}
-          className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0"
+          className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-2.5 sm:p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           😊
         </button>
@@ -283,18 +313,18 @@ export default function HUD() {
         {/* Chat input */}
         <form
           onSubmit={(e) => { e.preventDefault(); handleSendChat() }}
-          className="flex-1 flex gap-2"
+          className="flex-1 flex gap-1.5 sm:gap-2 min-w-0"
         >
           <input
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             placeholder="💬 Digite algo..."
             maxLength={80}
-            className="flex-1 bg-[#0d1b2a] border-2 border-[#2a4a7f] rounded-xl px-4 py-3 text-sm font-mono text-white placeholder-[#3d6db5] outline-none focus:border-[#3d6db5] transition-colors"
+            className="flex-1 min-w-0 bg-[#0d1b2a] border-2 border-[#2a4a7f] rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-mono text-white placeholder-[#3d6db5] outline-none focus:border-[#3d6db5] transition-colors"
           />
           <button
             type="submit"
-            className="bg-[#1e3a8a] hover:bg-[#2a4a9a] border-2 border-[#3d6db5] rounded-xl px-4 py-3 text-sm font-mono font-bold transition-colors"
+            className="bg-[#1e3a8a] hover:bg-[#2a4a9a] border-2 border-[#3d6db5] rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-mono font-bold transition-colors flex-shrink-0 min-w-[44px] min-h-[44px]"
           >
             ↵
           </button>
@@ -303,7 +333,7 @@ export default function HUD() {
         {/* Orb color button */}
         <button
           onClick={() => { setShowColors(!showColors); setShowEmotes(false) }}
-          className="w-12 h-12 rounded-full border-2 border-white/30 flex-shrink-0 transition-all hover:border-white/70"
+          className="w-11 h-11 rounded-full border-2 border-white/30 flex-shrink-0 transition-all hover:border-white/70"
           style={{
             backgroundColor: playerColor,
             boxShadow: `0 0 12px ${playerColor}88`,
@@ -313,7 +343,7 @@ export default function HUD() {
         {/* Wardrobe button */}
         <button
           onClick={() => { setShowWardrobe(true); setShowEmotes(false); setShowColors(false) }}
-          className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0"
+          className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-2.5 sm:p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           👕
         </button>
@@ -329,7 +359,7 @@ export default function HUD() {
         {/* Map button */}
         <button
           onClick={() => setShowMap(!showMap)}
-          className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0"
+          className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-2.5 sm:p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           🗺️
         </button>

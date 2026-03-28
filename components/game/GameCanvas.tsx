@@ -11,6 +11,7 @@ import HUD from './HUD'
 import DayNightCycle from './DayNightCycle'
 import { useGameStore } from '@/store/gameStore'
 import { useMultiplayer } from '@/hooks/useMultiplayer'
+import { useTokenRewards } from '@/hooks/useTokenRewards'
 
 // Drag tracking — prevents touch-end over HUD buttons from firing after a camera drag
 type DragState = { startX: number; startY: number; didDrag: boolean }
@@ -60,6 +61,7 @@ function CameraRig() {
 
 export default function GameCanvas() {
   useMultiplayer()
+  useTokenRewards()
 
   return (
     <div
