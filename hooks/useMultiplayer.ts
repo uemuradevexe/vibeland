@@ -24,10 +24,12 @@ export function useMultiplayer() {
         // Server assigned us an ID — now introduce ourselves
         case 'welcome': {
           ws.send(JSON.stringify({
-            type:  'join',
-            name:  store.playerName  || 'Anon',
-            color: store.playerColor,
-            room:  store.currentRoom,
+            type:    'join',
+            name:    store.playerName  || 'Anon',
+            color:   store.playerColor,
+            hat:     store.playerHat,
+            vehicle: store.playerVehicle,
+            room:    store.currentRoom,
           }))
           break
         }
@@ -42,7 +44,7 @@ export function useMultiplayer() {
           break
 
         case 'player_moved':
-          store.upsertRemotePlayer({ id: String(msg.id), x: Number(msg.x), z: Number(msg.z) })
+          store.upsertRemotePlayer({ id: String(msg.id), x: Number(msg.x), z: Number(msg.z), room: msg.room as RemotePlayer['room'] })
           break
 
         case 'player_chat':
@@ -60,6 +62,7 @@ export function useMultiplayer() {
     }
 
     ws.onerror = () => console.warn('[WS] connection error — is the server running?')
+    ws.onclose = () => useGameStore.getState().setRemotePlayers([])
 
     // ── Throttled position broadcast (~20 Hz) ───────────────────────────
     let lastX = 0, lastZ = 0
