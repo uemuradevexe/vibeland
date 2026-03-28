@@ -42,7 +42,7 @@ export default function WardrobeModal({ onClose }: WardrobeModalProps) {
 
   return (
     <div
-      className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50"
+      className="pointer-events-auto absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50"
       onClick={onClose}
     >
       <div
