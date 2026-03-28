@@ -15,6 +15,13 @@ interface PlayerState {
   emote: string | null
 }
 
+// Valid IDs kept in sync with lib/skins.ts
+const VALID_HATS     = new Set(['none', 'tophat', 'crown', 'cap', 'cowboy', 'wizard'])
+const VALID_VEHICLES = new Set(['none', 'skateboard'])
+
+function validHat(v: unknown)     { return VALID_HATS.has(String(v))     ? String(v) : 'none' }
+function validVehicle(v: unknown) { return VALID_VEHICLES.has(String(v)) ? String(v) : 'none' }
+
 const PORT = Number(process.env.WS_PORT ?? 3001)
 const wss = new WebSocketServer({ port: PORT })
 const players = new Map<WebSocket, PlayerState>()
@@ -30,7 +37,28 @@ function broadcastToRoom(room: RoomId, data: object, exclude?: WebSocket) {
   }
 }
 
+// ── Heartbeat: detect and terminate dead connections ─────────────────────────
+const HEARTBEAT_MS = 30_000
+type AliveSocket = WebSocket & { isAlive: boolean }
+
+const heartbeatTimer = setInterval(() => {
+  for (const ws of wss.clients) {
+    const socket = ws as AliveSocket
+    if (!socket.isAlive) { socket.terminate(); continue }
+    socket.isAlive = false
+    socket.ping()
+  }
+}, HEARTBEAT_MS)
+
+wss.on('close', () => clearInterval(heartbeatTimer))
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 wss.on('connection', (ws) => {
+  const socket = ws as AliveSocket
+  socket.isAlive = true
+  socket.on('pong', () => { socket.isAlive = true })
+
   const id = `p${nextId++}`
   console.log(`[+] ${id} connected  (total: ${wss.clients.size})`)
   send(ws, { type: 'welcome', id })
@@ -45,10 +73,10 @@ wss.on('connection', (ws) => {
     if (msg.type === 'join') {
       const state: PlayerState = {
         id,
-        name:    String(msg.name    || 'Anon').slice(0, 24),
-        color:   String(msg.color   || '#ea580c'),
-        hat:     String(msg.hat     || 'none'),
-        vehicle: String(msg.vehicle || 'none'),
+        name:    String(msg.name  || 'Anon').slice(0, 24),
+        color:   String(msg.color || '#ea580c'),
+        hat:     validHat(msg.hat),
+        vehicle: validVehicle(msg.vehicle),
         x: 0, z: 0,
         room:  (msg.room as RoomId) || 'plaza',
         chat:  null,
@@ -56,11 +84,8 @@ wss.on('connection', (ws) => {
       }
       players.set(ws, state)
 
-      // Send snapshot of the room the new player is entering
       const roomSnapshot = [...players.values()].filter(p => p.id !== id && p.room === state.room)
       send(ws, { type: 'room_state', players: roomSnapshot })
-
-      // Tell everyone else in the room
       broadcastToRoom(state.room, { type: 'player_joined', player: state }, ws)
       console.log(`[join] ${id} "${state.name}" → ${state.room}`)
       return
@@ -89,6 +114,22 @@ wss.on('connection', (ws) => {
         const emote = String(msg.emote || '')
         player.emote = emote
         broadcastToRoom(player.room, { type: 'player_emote', id, emote }, ws)
+        break
+      }
+
+      // ── color_change ─────────────────────────────────────────────────────
+      case 'color_change': {
+        const color = String(msg.color || '#ea580c')
+        player.color = color
+        broadcastToRoom(player.room, { type: 'player_color_changed', id, color }, ws)
+        break
+      }
+
+      // ── equip ────────────────────────────────────────────────────────────
+      case 'equip': {
+        player.hat     = validHat(msg.hat)
+        player.vehicle = validVehicle(msg.vehicle)
+        broadcastToRoom(player.room, { type: 'player_equipped', id, hat: player.hat, vehicle: player.vehicle }, ws)
         break
       }
 
