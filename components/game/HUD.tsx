@@ -64,6 +64,15 @@ export default function HUD() {
     }
   }, [dailyBonusPending, dismissDailyBonus])
 
+  // Online reward toast
+  useEffect(() => {
+    if (onlineRewardPending > 0) {
+      setShowOnlineToast(true)
+      const t = setTimeout(() => { setShowOnlineToast(false); dismissOnlineReward() }, 4000)
+      return () => clearTimeout(t)
+    }
+  }, [onlineRewardPending, dismissOnlineReward])
+
   // Achievement unlock toast
   useEffect(() => {
     if (pendingAchievement) {

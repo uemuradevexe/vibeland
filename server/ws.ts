@@ -1,6 +1,8 @@
 import { WebSocketServer, WebSocket } from 'ws'
+import { randomUUID } from 'crypto'
+import { IncomingMessage } from 'http'
 
-type RoomId = 'plaza' | 'cafe' | 'beach' | 'library' | 'arcade' | 'garden' | 'rooftop' | 'dungeon' | 'space'
+type RoomId = 'plaza' | 'cafe' | 'beach' | 'library' | 'arcade' | 'garden'
 
 interface PlayerState {
   id: string
@@ -17,19 +19,65 @@ interface PlayerState {
   emote: string | null
 }
 
-// Valid IDs kept in sync with lib/skins.ts and lib/avatars.ts
-const VALID_HATS     = new Set(['none', 'tophat', 'crown', 'cap', 'cowboy', 'wizard', 'viking', 'halo', 'pirate', 'alien'])
-const VALID_VEHICLES = new Set(['none', 'skateboard', 'hoverboard', 'cloud'])
+// ── Validation allowlists (keep in sync with client libs) ───────────────────
+const VALID_ROOMS    = new Set<string>(['plaza', 'cafe', 'beach', 'library', 'arcade', 'garden'])
+const VALID_HATS     = new Set(['none', 'tophat', 'crown', 'cap', 'cowboy', 'wizard'])
+const VALID_VEHICLES = new Set(['none', 'skateboard'])
 const VALID_AVATARS  = new Set(['default', 'turtle', 'elephant', 'lizard', 'penguin'])
+const VALID_EMOTES   = new Set(['❤️', '✨', '😂', '🤔', '👋', '🎉', '💃', '😴', '🤖', '🧠', '🔥', '😎', '🪑'])
 
-function validHat(v: unknown)     { return VALID_HATS.has(String(v))     ? String(v) : 'none' }
-function validVehicle(v: unknown) { return VALID_VEHICLES.has(String(v)) ? String(v) : 'none' }
-function validAvatar(v: unknown)  { return VALID_AVATARS.has(String(v))  ? String(v) : 'default' }
+function validRoom(v: unknown): RoomId     { return VALID_ROOMS.has(String(v)) ? String(v) as RoomId : 'plaza' }
+function validHat(v: unknown)              { return VALID_HATS.has(String(v))     ? String(v) : 'none' }
+function validVehicle(v: unknown)          { return VALID_VEHICLES.has(String(v)) ? String(v) : 'none' }
+function validAvatar(v: unknown)           { return VALID_AVATARS.has(String(v))  ? String(v) : 'default' }
+function validColor(v: unknown): string    { return /^#[0-9a-fA-F]{6}$/.test(String(v)) ? String(v) : '#ea580c' }
+function validEmote(v: unknown): string | null { return VALID_EMOTES.has(String(v)) ? String(v) : null }
 
+// Clamp position to playable bounds
+const POS_MIN = -20
+const POS_MAX = 20
+function clampPos(v: unknown): number {
+  const n = Number(v) || 0
+  return Math.max(POS_MIN, Math.min(POS_MAX, n))
+}
+
+// Sanitize chat: strip HTML tags and limit length
+function sanitizeChat(v: unknown): string {
+  return String(v || '')
+    .replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]!))
+    .slice(0, 120)
+}
+
+// ── Rate limiting ────────────────────────────────────────────────────────────
+const MAX_CONNECTIONS_PER_IP = 5
+const MAX_MESSAGES_PER_SEC   = 20
+const ipConnections = new Map<string, number>()
+
+interface RateLimitState {
+  messageCount: number
+  lastReset: number
+}
+
+function checkRateLimit(state: RateLimitState): boolean {
+  const now = Date.now()
+  if (now - state.lastReset > 1000) {
+    state.messageCount = 0
+    state.lastReset = now
+  }
+  state.messageCount++
+  return state.messageCount <= MAX_MESSAGES_PER_SEC
+}
+
+function getClientIp(req: IncomingMessage): string {
+  const forwarded = req.headers['x-forwarded-for']
+  if (typeof forwarded === 'string') return forwarded.split(',')[0].trim()
+  return req.socket.remoteAddress ?? 'unknown'
+}
+
+// ── Server setup ─────────────────────────────────────────────────────────────
 const PORT = Number(process.env.WS_PORT ?? 3001)
 const wss = new WebSocketServer({ port: PORT })
 const players = new Map<WebSocket, PlayerState>()
-let nextId = 1
 
 function send(ws: WebSocket, data: object) {
   if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(data))
@@ -58,16 +106,33 @@ wss.on('close', () => clearInterval(heartbeatTimer))
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+  // ── Per-IP connection limit ──
+  const ip = getClientIp(req)
+  const currentCount = ipConnections.get(ip) ?? 0
+  if (currentCount >= MAX_CONNECTIONS_PER_IP) {
+    ws.close(4429, 'Too many connections')
+    return
+  }
+  ipConnections.set(ip, currentCount + 1)
+
   const socket = ws as AliveSocket
   socket.isAlive = true
   socket.on('pong', () => { socket.isAlive = true })
 
-  const id = `p${nextId++}`
+  const id = randomUUID().slice(0, 8)
+  const rateLimit: RateLimitState = { messageCount: 0, lastReset: Date.now() }
+
   console.log(`[+] ${id} connected  (total: ${wss.clients.size})`)
   send(ws, { type: 'welcome', id })
 
   ws.on('message', (raw) => {
+    // Rate limit check
+    if (!checkRateLimit(rateLimit)) return
+
+    // Max message size: 2KB
+    if (raw.toString().length > 2048) return
+
     let msg: Record<string, unknown>
     try { msg = JSON.parse(raw.toString()) } catch { return }
 
@@ -77,14 +142,14 @@ wss.on('connection', (ws) => {
     if (msg.type === 'join') {
       const state: PlayerState = {
         id,
-        name:    String(msg.name  || 'Anon').slice(0, 24),
-        color:   String(msg.color || '#ea580c'),
+        name:    String(msg.name  || 'Anon').replace(/[<>&"']/g, '').slice(0, 24),
+        color:   validColor(msg.color),
         hat:     validHat(msg.hat),
         vehicle: validVehicle(msg.vehicle),
         avatar:  validAvatar(msg.avatar),
         level:   Math.max(1, Math.min(10, Number(msg.level) || 1)),
         x: 0, z: 0,
-        room:  (msg.room as RoomId) || 'plaza',
+        room:  validRoom(msg.room),
         chat:  null,
         emote: null,
       }
@@ -102,14 +167,15 @@ wss.on('connection', (ws) => {
     switch (msg.type) {
       // ── move ────────────────────────────────────────────────────────────
       case 'move':
-        player.x = Number(msg.x) || 0
-        player.z = Number(msg.z) || 0
+        player.x = clampPos(msg.x)
+        player.z = clampPos(msg.z)
         broadcastToRoom(player.room, { type: 'player_moved', id, x: player.x, z: player.z, room: player.room }, ws)
         break
 
       // ── chat ────────────────────────────────────────────────────────────
       case 'chat': {
-        const message = String(msg.message || '').slice(0, 120)
+        const message = sanitizeChat(msg.message)
+        if (!message) break
         player.chat = message
         broadcastToRoom(player.room, { type: 'player_chat', id, message }, ws)
         break
@@ -117,7 +183,8 @@ wss.on('connection', (ws) => {
 
       // ── emote ───────────────────────────────────────────────────────────
       case 'emote': {
-        const emote = String(msg.emote || '')
+        const emote = validEmote(msg.emote)
+        if (!emote) break
         player.emote = emote
         broadcastToRoom(player.room, { type: 'player_emote', id, emote }, ws)
         break
@@ -125,7 +192,7 @@ wss.on('connection', (ws) => {
 
       // ── color_change ─────────────────────────────────────────────────────
       case 'color_change': {
-        const color = String(msg.color || '#ea580c')
+        const color = validColor(msg.color)
         player.color = color
         broadcastToRoom(player.room, { type: 'player_color_changed', id, color }, ws)
         break
@@ -151,7 +218,7 @@ wss.on('connection', (ws) => {
       // ── change_room ──────────────────────────────────────────────────────
       case 'change_room': {
         const oldRoom = player.room
-        const newRoom = (msg.room as RoomId) || 'plaza'
+        const newRoom = validRoom(msg.room)
         broadcastToRoom(oldRoom, { type: 'player_left', id }, ws)
 
         player.room  = newRoom
@@ -176,6 +243,11 @@ wss.on('connection', (ws) => {
       console.log(`[-] ${p.id} "${p.name}" disconnected  (total: ${wss.clients.size - 1})`)
     }
     players.delete(ws)
+
+    // Decrement IP connection count
+    const count = ipConnections.get(ip) ?? 1
+    if (count <= 1) ipConnections.delete(ip)
+    else ipConnections.set(ip, count - 1)
   })
 })
 
