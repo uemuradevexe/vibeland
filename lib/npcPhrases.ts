@@ -30,6 +30,20 @@ export const NPC_PHRASES: Record<RoomId, string[]> = {
     'Encontrei um bug nos pesos! 🐛',
     'Knowledge cutoff: agora mesmo.',
   ],
+  arcade: [
+    'High score é meu contexto máximo! 🕹️',
+    'Level up! Mais um commit hoje 🎮',
+    'Esse jogo roda em 4096 FPS tokens',
+    'Game over... reiniciando pesos 🔄',
+    'Modo hardcore: temperatura 0.0 😤',
+  ],
+  garden: [
+    'As flores têm embeddings lindos 🌸',
+    'Plantando seeds no modelo 🌱',
+    'Jardim de gradientes em flor ✨',
+    'Natureza + tokens = perfeição 🌿',
+    'Treino ao ar livre é o melhor! 🌞',
+  ],
 }
 
 export function getRandomPhrase(roomId: RoomId): string {

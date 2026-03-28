@@ -7,6 +7,9 @@ import { ORB_COLORS } from '@/lib/orbColors'
 import WardrobeModal from '@/components/ui/WardrobeModal'
 import ProfileModal from '@/components/ui/ProfileModal'
 import BeachMinigame from '@/components/game/BeachMinigame'
+import AchievementsModal from '@/components/ui/AchievementsModal'
+import { getLevel } from '@/lib/githubLevel'
+import { ACHIEVEMENTS } from '@/lib/achievements'
 
 const EMOTES = ['❤️', '✨', '😂', '🤔', '👋', '🎉']
 
@@ -19,6 +22,12 @@ export default function HUD() {
   const [showProfile, setShowProfile] = useState(false)
   const [showMinigame, setShowMinigame] = useState(false)
   const [showDailyToast, setShowDailyToast] = useState(false)
+  const [showAchievements, setShowAchievements] = useState(false)
+  const [showGithubModal, setShowGithubModal] = useState(false)
+  const [githubInput, setGithubInput] = useState('')
+  const [githubLoading, setGithubLoading] = useState(false)
+  const [githubError, setGithubError] = useState<string | null>(null)
+  const [showAchievementToast, setShowAchievementToast] = useState(false)
 
   const sendChat = useGameStore((s) => s.sendChat)
   const sendEmote = useGameStore((s) => s.sendEmote)
@@ -31,6 +40,11 @@ export default function HUD() {
   const dailyBonusPending   = useGameStore((s) => s.dailyBonusPending)
   const dismissDailyBonus   = useGameStore((s) => s.dismissDailyBonus)
   const remotePlayers       = useGameStore((s) => s.remotePlayers)
+  const githubLevel         = useGameStore((s) => s.githubLevel)
+  const githubUsername      = useGameStore((s) => s.githubUsername)
+  const setGithubLevel      = useGameStore((s) => s.setGithubLevel)
+  const pendingAchievement  = useGameStore((s) => s.pendingAchievement)
+  const dismissAchievement  = useGameStore((s) => s.dismissAchievement)
   const onlineCount         = Object.keys(remotePlayers).length + 1
 
   useEffect(() => {
@@ -43,6 +57,47 @@ export default function HUD() {
       return () => clearTimeout(t)
     }
   }, [dailyBonusPending, dismissDailyBonus])
+
+  // Achievement unlock toast
+  useEffect(() => {
+    if (pendingAchievement) {
+      setShowAchievementToast(true)
+      const t = setTimeout(() => {
+        setShowAchievementToast(false)
+        dismissAchievement()
+      }, 4000)
+      return () => clearTimeout(t)
+    }
+  }, [pendingAchievement, dismissAchievement])
+
+  // Prefill github input when modal opens
+  useEffect(() => {
+    if (showGithubModal && githubUsername) {
+      setGithubInput(githubUsername)
+    }
+  }, [showGithubModal, githubUsername])
+
+  async function handleGithubConnect() {
+    const username = githubInput.trim()
+    if (!username) return
+    setGithubLoading(true)
+    setGithubError(null)
+    try {
+      const res = await fetch(`/api/github/contributions?username=${encodeURIComponent(username)}`)
+      if (!res.ok) throw new Error('Failed to fetch')
+      const data = await res.json()
+      const contributions = data.contributions ?? 0
+      const level = getLevel(contributions)
+      setGithubLevel(username, level, contributions)
+      setShowGithubModal(false)
+    } catch {
+      setGithubError('Could not fetch GitHub data')
+    } finally {
+      setGithubLoading(false)
+    }
+  }
+
+  const pendingAchievementDef = pendingAchievement ? ACHIEVEMENTS[pendingAchievement] : null
 
   function handleSendChat() {
     if (!chatInput.trim()) return
@@ -65,8 +120,17 @@ export default function HUD() {
           <span className="ml-3 text-[#3d6db5]">·</span>
           <span className="ml-2 text-[#5a9a58] text-xs">🟢 {onlineCount}</span>
         </button>
-        <div className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-4 py-1.5 font-mono text-sm text-yellow-400 backdrop-blur-sm">
-          💰 {tokens}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowGithubModal(true)}
+            className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-4 py-1.5 font-mono text-sm text-yellow-400 backdrop-blur-sm hover:bg-[#1a2744cc] transition-colors"
+            title={githubUsername ? `GitHub: ${githubUsername}` : 'Connect GitHub'}
+          >
+            ⚡ Lv.{githubLevel}
+          </button>
+          <div className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-4 py-1.5 font-mono text-sm text-yellow-400 backdrop-blur-sm">
+            💰 {tokens}
+          </div>
         </div>
       </div>
 
@@ -74,6 +138,14 @@ export default function HUD() {
       {showDailyToast && (
         <div className="pointer-events-none absolute top-16 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-black font-mono text-sm font-bold px-5 py-2 rounded-full shadow-lg animate-bounce z-50">
           🎁 +{dailyBonusPending} tokens — daily login!
+        </div>
+      )}
+
+      {/* Achievement unlock toast */}
+      {showAchievementToast && pendingAchievementDef && (
+        <div className="pointer-events-none absolute top-28 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-black font-mono text-sm font-bold px-5 py-2 rounded-full shadow-lg z-50 flex items-center gap-2 whitespace-nowrap">
+          <span>{pendingAchievementDef.emoji}</span>
+          <span>Achievement: {pendingAchievementDef.name}!</span>
         </div>
       )}
 
@@ -116,6 +188,54 @@ export default function HUD() {
 
       {/* Beach minigame */}
       {showMinigame && <BeachMinigame onClose={() => setShowMinigame(false)} />}
+
+      {/* Achievements modal */}
+      {showAchievements && <AchievementsModal onClose={() => setShowAchievements(false)} />}
+
+      {/* GitHub connect modal */}
+      {showGithubModal && (
+        <div
+          className="pointer-events-auto absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50"
+          onClick={() => setShowGithubModal(false)}
+        >
+          <div
+            className="bg-[#111e38] border-2 border-[#2a4a7f] rounded-xl p-5 w-72"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="font-mono font-bold text-[#7a9cc8] mb-3">⚡ Connect GitHub</h2>
+            <p className="font-mono text-[10px] text-[#5a7aa8] mb-3">
+              Your GitHub contribution count determines your in-game level and aura.
+            </p>
+            <input
+              className="w-full bg-[#0d1b2a] border-2 border-[#2a4a7f] rounded-lg px-3 py-2 text-sm font-mono text-white placeholder-[#3d6db5] outline-none focus:border-[#3d6db5] transition-colors mb-3"
+              placeholder="github username"
+              value={githubInput}
+              onChange={(e) => setGithubInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleGithubConnect()}
+              autoFocus
+            />
+            {githubError && (
+              <p className="font-mono text-[10px] text-red-400 mb-2">{githubError}</p>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={handleGithubConnect}
+                disabled={githubLoading || !githubInput.trim()}
+                className="flex-1 bg-[#1e3a8a] hover:bg-[#2a4a9a] disabled:opacity-50 border-2 border-[#3d6db5] rounded-lg px-4 py-2 text-sm font-mono font-bold transition-colors"
+              >
+                {githubLoading ? 'Loading...' : 'Connect'}
+              </button>
+              <button
+                onClick={() => setShowGithubModal(false)}
+                className="bg-[#1a2744] hover:bg-[#243060] border-2 border-[#2a4a7f] rounded-lg px-4 py-2 text-sm font-mono transition-colors text-[#7a9cc8]"
+              >
+                Cancel
+              </button>
+            </div>
+            <p className="text-[#3d6db5] text-xs font-mono text-center mt-3">click outside to close</p>
+          </div>
+        </div>
+      )}
 
       {/* Bottom HUD */}
       <div className="pointer-events-auto p-3 flex items-end gap-2">
@@ -196,6 +316,14 @@ export default function HUD() {
           className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0"
         >
           👕
+        </button>
+
+        {/* Achievements button */}
+        <button
+          onClick={() => { setShowAchievements(true); setShowEmotes(false); setShowColors(false) }}
+          className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0"
+        >
+          🏆
         </button>
 
         {/* Map button */}

@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Stripe not configured' }, { status: 503 })
     }
 
-    // Dynamic import to avoid build errors when stripe is not installed
+    // Dynamic import — install stripe package to activate: npm install stripe
+    // @ts-expect-error stripe not yet installed (pre-setup)
     const Stripe = (await import('stripe')).default
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-01-27.acacia' as never })
 
