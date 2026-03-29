@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
@@ -46,23 +46,26 @@ export default function ClaudeOrb({
   const floatRef     = useRef<THREE.Group>(null)
   const leftArmRef   = useRef<THREE.Mesh>(null)
   const rightArmRef  = useRef<THREE.Mesh>(null)
-  const leftLegRef   = useRef<THREE.Mesh>(null)
-  const rightLegRef  = useRef<THREE.Mesh>(null)
   const auraRingRef  = useRef<THREE.Mesh>(null)
   const auraRing2Ref = useRef<THREE.Mesh>(null)
   const auraGroupRef = useRef<THREE.Group>(null)
 
   const prevPos    = useRef({ x, z })
   const targetRotY = useRef(0)
-  const walkPhase  = useRef(Math.random() * Math.PI * 2)
-  const idlePhase  = useRef(Math.random() * Math.PI * 2)
+  const walkPhase  = useRef(0)
+  const idlePhase  = useRef(0)
 
   const limbColor = darkenHex(color)
   const scale = isPlayer ? 1.1 : 1.0
-  const headTop = avatarDef.pieces.length > 0 ? avatarDef.headTopY : 2.0
+  const headTop = avatarDef.headTopY
   const isDefault = avatar === 'default' || avatarDef.pieces.length === 0
 
   const levelColor = LEVEL_COLORS[clampedLevel] ?? '#9E9E9E'
+
+  useEffect(() => {
+    walkPhase.current = Math.random() * Math.PI * 2
+    idlePhase.current = Math.random() * Math.PI * 2
+  }, [])
 
   useFrame((_, delta) => {
     if (!bodyRef.current || !floatRef.current) return
@@ -76,8 +79,6 @@ export default function ClaudeOrb({
       walkPhase.current += delta * 7
       const swing = Math.sin(walkPhase.current)
       if (isDefault) {
-        if (leftLegRef.current)  leftLegRef.current.rotation.x  =  swing * 0.6
-        if (rightLegRef.current) rightLegRef.current.rotation.x = -swing * 0.6
         if (leftArmRef.current)  leftArmRef.current.rotation.x  = -swing * 0.45
         if (rightArmRef.current) rightArmRef.current.rotation.x  =  swing * 0.45
       } else {
@@ -85,8 +86,6 @@ export default function ClaudeOrb({
       }
     } else {
       if (isDefault) {
-        if (leftLegRef.current)  leftLegRef.current.rotation.x  *= 0.85
-        if (rightLegRef.current) rightLegRef.current.rotation.x *= 0.85
         if (leftArmRef.current)  leftArmRef.current.rotation.x  *= 0.85
         if (rightArmRef.current) rightArmRef.current.rotation.x *= 0.85
       } else {
@@ -116,7 +115,7 @@ export default function ClaudeOrb({
 
   // Generate static particle positions — orbiting via group rotation
   const particleCount = Math.min(auraConfig.particleCount, 20)
-  const particles = Array.from({ length: particleCount }, (_, i) => {
+  const particles = useMemo(() => Array.from({ length: particleCount }, (_, i) => {
     const angle = (i / particleCount) * Math.PI * 2
     const r = 0.75 + (i % 3) * 0.15
     const py = 0.8 + (i % 5) * 0.22
@@ -126,7 +125,7 @@ export default function ClaudeOrb({
         <meshStandardMaterial color={auraColor} emissive={auraColor} emissiveIntensity={2.2} toneMapped={false} />
       </mesh>
     )
-  })
+  }), [particleCount, auraColor])
 
   return (
     <group position={[x, 0, z]} scale={[scale, scale, scale]}>
@@ -160,48 +159,32 @@ export default function ClaudeOrb({
         <group ref={floatRef}>
 
           {isDefault ? (
-            // ── Default humanoid ──────────────────────────────────────────
+            // ── Block head + thin arms ─────────────────────────────────────
             <>
-              <group position={[-0.125, 0.75, 0]}>
-                <mesh ref={leftLegRef} position={[0, -0.375, 0]}>
-                  <boxGeometry args={[0.25, 0.75, 0.25]} />
-                  <meshStandardMaterial color={limbColor} />
-                </mesh>
-              </group>
-              <group position={[0.125, 0.75, 0]}>
-                <mesh ref={rightLegRef} position={[0, -0.375, 0]}>
-                  <boxGeometry args={[0.25, 0.75, 0.25]} />
-                  <meshStandardMaterial color={limbColor} />
-                </mesh>
-              </group>
-              <mesh position={[0, 1.125, 0]}>
-                <boxGeometry args={[0.5, 0.75, 0.25]} />
-                <meshStandardMaterial color={color} emissive={color} emissiveIntensity={isPlayer ? 0.22 : 0.1} toneMapped={false} />
+              <mesh position={[0, 0.95, 0]}>
+                <boxGeometry args={[0.70, 0.70, 0.70]} />
+                <meshStandardMaterial color={color} emissive={color} emissiveIntensity={isPlayer ? 0.28 : 0.12} toneMapped={false} />
               </mesh>
-              <group position={[-0.375, 1.5, 0]}>
-                <mesh ref={leftArmRef} position={[0, -0.375, 0]}>
-                  <boxGeometry args={[0.25, 0.75, 0.25]} />
-                  <meshStandardMaterial color={limbColor} />
-                </mesh>
-              </group>
-              <group position={[0.375, 1.5, 0]}>
-                <mesh ref={rightArmRef} position={[0, -0.375, 0]}>
-                  <boxGeometry args={[0.25, 0.75, 0.25]} />
-                  <meshStandardMaterial color={limbColor} />
-                </mesh>
-              </group>
-              <mesh position={[0, 1.75, 0]}>
-                <boxGeometry args={[0.5, 0.5, 0.5]} />
-                <meshStandardMaterial color={color} emissive={color} emissiveIntensity={isPlayer ? 0.28 : 0.13} toneMapped={false} />
-              </mesh>
-              <mesh position={[-0.12, 1.79, 0.26]}>
-                <boxGeometry args={[0.1, 0.1, 0.02]} />
+              <mesh position={[-0.13, 0.99, 0.36]}>
+                <boxGeometry args={[0.10, 0.10, 0.02]} />
                 <meshStandardMaterial color="#1a0a00" />
               </mesh>
-              <mesh position={[0.12, 1.79, 0.26]}>
-                <boxGeometry args={[0.1, 0.1, 0.02]} />
+              <mesh position={[0.13, 0.99, 0.36]}>
+                <boxGeometry args={[0.10, 0.10, 0.02]} />
                 <meshStandardMaterial color="#1a0a00" />
               </mesh>
+              <group position={[-0.41, 1.04, 0]}>
+                <mesh ref={leftArmRef} position={[0, -0.19, 0]}>
+                  <boxGeometry args={[0.12, 0.38, 0.12]} />
+                  <meshStandardMaterial color={limbColor} />
+                </mesh>
+              </group>
+              <group position={[0.41, 1.04, 0]}>
+                <mesh ref={rightArmRef} position={[0, -0.19, 0]}>
+                  <boxGeometry args={[0.12, 0.38, 0.12]} />
+                  <meshStandardMaterial color={limbColor} />
+                </mesh>
+              </group>
             </>
           ) : (
             // ── Animal avatar ─────────────────────────────────────────────
@@ -254,15 +237,15 @@ export default function ClaudeOrb({
         {/* Player crown (default avatar only, no hat) */}
         {isPlayer && hat === 'none' && isDefault && (
           <>
-            <mesh position={[-0.13, 2.07, 0]}>
+            <mesh position={[-0.13, headTop + 0.07, 0]}>
               <boxGeometry args={[0.12, 0.12, 0.12]} />
               <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.5} toneMapped={false} />
             </mesh>
-            <mesh position={[0, 2.12, 0]}>
+            <mesh position={[0, headTop + 0.12, 0]}>
               <boxGeometry args={[0.12, 0.18, 0.12]} />
               <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.5} toneMapped={false} />
             </mesh>
-            <mesh position={[0.13, 2.07, 0]}>
+            <mesh position={[0.13, headTop + 0.07, 0]}>
               <boxGeometry args={[0.12, 0.12, 0.12]} />
               <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.5} toneMapped={false} />
             </mesh>
