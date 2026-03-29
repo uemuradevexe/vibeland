@@ -25,14 +25,19 @@ const KEYFRAMES = [
   { t: 1.0,  ai: 0.15, di: 0.2,  ac: '#1a0e30', dc: '#ff6030' },
 ]
 
+// Pre-parse keyframe colors once at module load — avoid per-frame allocations
+const PARSED_KEYFRAMES = KEYFRAMES.map((kf) => ({
+  ...kf,
+  acColor: new THREE.Color(kf.ac),
+  dcColor: new THREE.Color(kf.dc),
+}))
+
+// Scratch colors reused every frame
+const _ambientColor = new THREE.Color()
+const _dirColor     = new THREE.Color()
+
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t
-}
-
-function lerpColor(ca: string, cb: string, t: number): THREE.Color {
-  const a = new THREE.Color(ca)
-  const b = new THREE.Color(cb)
-  return a.lerp(b, t)
 }
 
 export default function DayNightCycle() {
@@ -47,12 +52,12 @@ export default function DayNightCycle() {
     const phase = elapsed.current / CYCLE_DURATION
 
     // Find surrounding keyframes
-    let prev = KEYFRAMES[KEYFRAMES.length - 2]
-    let next = KEYFRAMES[KEYFRAMES.length - 1]
-    for (let i = 0; i < KEYFRAMES.length - 1; i++) {
-      if (phase >= KEYFRAMES[i].t && phase < KEYFRAMES[i + 1].t) {
-        prev = KEYFRAMES[i]
-        next = KEYFRAMES[i + 1]
+    let prev = PARSED_KEYFRAMES[PARSED_KEYFRAMES.length - 2]
+    let next = PARSED_KEYFRAMES[PARSED_KEYFRAMES.length - 1]
+    for (let i = 0; i < PARSED_KEYFRAMES.length - 1; i++) {
+      if (phase >= PARSED_KEYFRAMES[i].t && phase < PARSED_KEYFRAMES[i + 1].t) {
+        prev = PARSED_KEYFRAMES[i]
+        next = PARSED_KEYFRAMES[i + 1]
         break
       }
     }
@@ -61,9 +66,9 @@ export default function DayNightCycle() {
     const t = span > 0 ? (phase - prev.t) / span : 0
 
     ambientRef.current.intensity = lerp(prev.ai, next.ai, t)
-    ambientRef.current.color = lerpColor(prev.ac, next.ac, t)
+    ambientRef.current.color.copy(_ambientColor.copy(prev.acColor).lerp(next.acColor, t))
     dirRef.current.intensity = lerp(prev.di, next.di, t)
-    dirRef.current.color = lerpColor(prev.dc, next.dc, t)
+    dirRef.current.color.copy(_dirColor.copy(prev.dcColor).lerp(next.dcColor, t))
   })
 
   return (

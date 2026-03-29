@@ -35,8 +35,6 @@ export default function BeachMinigame({ onClose }: Props) {
   const [score, setScore]   = useState(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const storeTokens  = useGameStore((s) => s.tokens)
-
   function start() {
     setPhase('playing')
     setTokens(makeTokens())
@@ -67,7 +65,8 @@ export default function BeachMinigame({ onClose }: Props) {
 
   function claimReward() {
     const earned = score * REWARD_PER_TOKEN
-    const newTotal = storeTokens + earned
+    const current = useGameStore.getState().tokens  // always fresh — avoids stale closure
+    const newTotal = current + earned
     saveTokens(newTotal)
     useGameStore.setState({ tokens: newTotal })
     onClose()

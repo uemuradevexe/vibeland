@@ -76,7 +76,7 @@ Seven more bugs fixed after deeper codebase review.
   - Was creating 3 allocations per frame (180/s at 60 FPS) under key input, causing GC pressure.
   - Now reuses the same objects via mutating methods (`getWorldDirection`, `crossVectors`, `normalize`). (closes #83)
 
-### Issues addressed (second round)
+### Issues addressed (second round — #77–#83)
 - Free items never added to inventory → achievements unreliable (#77)
 - `interpRef` memory leak in RemotePlayers (#78)
 - `first_steps` achievement wrong room count (#79)
@@ -84,3 +84,42 @@ Seven more bugs fixed after deeper codebase review.
 - Server emote has no length limit (#81)
 - HUD cooldown timer leaks on unmount (#82)
 - THREE.Vector3 allocated per frame in KeyboardInput (#83)
+
+---
+
+## 2026-03-29 — Round 3 — Branch: `fix/issues-63-70-avatar-sync-multiplayer` (continued)
+
+### Summary
+Four more bugs fixed after reading `Room.tsx`, `BeachMinigame.tsx`, `GameCanvas.tsx`, `DayNightCycle.tsx`, and `app/api/github/contributions/route.ts`.
+
+### Changes
+
+#### `components/game/Room.tsx` ← CRITICAL
+- **Added `playerAvatar` subscription and prop** to the local player's `<ClaudeOrb>`.
+  - This was the root cause of the original bug report: `playerAvatar` was never read from the store nor forwarded to `ClaudeOrb`, so the local player always rendered as the default humanoid regardless of what was equipped. Remote players saw the correct avatar (via WS), but the local player never did. (closes #84)
+
+#### `components/game/BeachMinigame.tsx`
+- **`claimReward` now reads tokens from `useGameStore.getState()`** instead of the stale selector value.
+  - The component's selector could be stale if the online reward timer fired during the 60-second game, causing those tokens to be silently overwritten. (closes #85)
+- Removed unused `const storeTokens = useGameStore(...)` selector.
+
+#### `components/game/GameCanvas.tsx` (CameraRig)
+- **Pre-allocated `_dest`, `_prevTarget`, `_delta`** as module-level `THREE.Vector3` instances.
+  - Was creating 3 new objects per frame (180/s at 60 FPS). Now uses `.set()`, `.copy()`, `.sub()` on reused instances. (closes #86)
+
+#### `components/game/DayNightCycle.tsx`
+- **Added `PARSED_KEYFRAMES`** — hex colors parsed into `THREE.Color` once at module load.
+- **Added `_ambientColor`, `_dirColor`** scratch colors reused each frame.
+  - Was creating 4 `new THREE.Color()` per frame (240/s) and parsing hex strings each time. Now zero allocations per frame. (closes #86)
+
+#### `app/api/github/contributions/route.ts`
+- **Added `null` user check** — non-existent usernames now return HTTP 404 with `{ error: 'GitHub user not found' }` instead of silent `{ contributions: 0 }` (HTTP 200). (closes #87)
+
+#### `components/game/HUD.tsx`
+- GitHub connect error now surfaces the actual error message so "GitHub user not found" appears instead of the generic fallback.
+
+### Issues addressed (third round — #84–#87)
+- CRITICAL: local player avatar never updates — `playerAvatar` prop missing in Room.tsx (#84)
+- BeachMinigame stale token read in `claimReward` (#85)
+- CameraRig + DayNightCycle per-frame Three.js allocations (#86)
+- GitHub API returns silent 200 for non-existent users (#87)

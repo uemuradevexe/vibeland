@@ -31,6 +31,7 @@ export default function Room() {
   const playerEmote   = useGameStore((s) => s.playerEmote)
   const playerHat     = useGameStore((s) => s.playerHat)
   const playerVehicle = useGameStore((s) => s.playerVehicle)
+  const playerAvatar  = useGameStore((s) => s.playerAvatar)
   const initPlayer    = useGameStore((s) => s.initPlayer)
 
   useEffect(() => { initPlayer() }, [initPlayer])
@@ -51,6 +52,7 @@ export default function Room() {
         emote={playerEmote}
         hat={playerHat}
         vehicle={playerVehicle}
+        avatar={playerAvatar}
         isPlayer
       />
     </>

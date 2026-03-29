@@ -106,14 +106,15 @@ export default function HUD() {
     setGithubError(null)
     try {
       const res = await fetch(`/api/github/contributions?username=${encodeURIComponent(username)}`)
+      if (res.status === 404) throw new Error('GitHub user not found')
       if (!res.ok) throw new Error('Failed to fetch')
       const data = await res.json()
       const contributions = data.contributions ?? 0
       const level = getLevel(contributions)
       setGithubLevel(username, level, contributions)
       setShowGithubModal(false)
-    } catch {
-      setGithubError('Could not fetch GitHub data')
+    } catch (e) {
+      setGithubError(e instanceof Error ? e.message : 'Could not fetch GitHub data')
     } finally {
       setGithubLoading(false)
     }
