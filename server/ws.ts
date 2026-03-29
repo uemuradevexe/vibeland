@@ -38,6 +38,10 @@ const VALID_AVATARS  = new Set(['default', 'turtle', 'elephant', 'lizard', 'peng
 function validHat(v: unknown)     { return VALID_HATS.has(String(v))     ? String(v) : 'none' }
 function validVehicle(v: unknown) { return VALID_VEHICLES.has(String(v)) ? String(v) : 'none' }
 function validAvatar(v: unknown)  { return VALID_AVATARS.has(String(v))  ? String(v) : 'default' }
+function validColor(v: unknown)   {
+  const s = String(v ?? '').trim()
+  return /^#[0-9a-fA-F]{6}$/.test(s) ? s : '#ea580c'
+}
 
 const PORT = Number(process.env.WS_PORT ?? 3001)
 const wss = new WebSocketServer({ port: PORT })
@@ -91,7 +95,7 @@ wss.on('connection', (ws) => {
       const state: PlayerState = {
         id,
         name:    String(msg.name  || 'Anon').slice(0, 24),
-        color:   String(msg.color || '#ea580c'),
+        color:   validColor(msg.color),
         hat:     validHat(msg.hat),
         vehicle: validVehicle(msg.vehicle),
         avatar:  validAvatar(msg.avatar),
@@ -130,7 +134,7 @@ wss.on('connection', (ws) => {
 
       // ── emote ───────────────────────────────────────────────────────────
       case 'emote': {
-        const emote = String(msg.emote || '')
+        const emote = String(msg.emote || '').slice(0, 12)
         player.emote = emote
         broadcastToRoom(player.room, { type: 'player_emote', id, emote }, ws)
         break
@@ -138,7 +142,7 @@ wss.on('connection', (ws) => {
 
       // ── color_change ─────────────────────────────────────────────────────
       case 'color_change': {
-        const color = String(msg.color || '#ea580c')
+        const color = validColor(msg.color)
         player.color = color
         broadcastToRoom(player.room, { type: 'player_color_changed', id, color }, ws)
         break

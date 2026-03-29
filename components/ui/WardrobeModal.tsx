@@ -26,30 +26,34 @@ export default function WardrobeModal({ onClose }: WardrobeModalProps) {
   const buyItem       = useGameStore((s) => s.buyItem)
 
   function handleSelectHatOrVehicle(id: string, cost: number, type: 'hat' | 'vehicle') {
-    if (!inventory.includes(id) && cost > 0) {
+    if (!inventory.includes(id)) {
       const ok = buyItem(id, cost)
       if (!ok) {
         setFeedback('Not enough tokens ✗')
         setTimeout(() => setFeedback(null), 2000)
         return
       }
-      setFeedback('Unlocked! ✦')
-      setTimeout(() => setFeedback(null), 2000)
+      if (cost > 0) {
+        setFeedback('Unlocked! ✦')
+        setTimeout(() => setFeedback(null), 2000)
+      }
     }
     if (type === 'hat') equipHat(id as HatId)
     else equipVehicle(id as VehicleId)
   }
 
   function handleSelectAvatar(id: AvatarId, cost: number) {
-    if (!inventory.includes(id) && cost > 0) {
+    if (!inventory.includes(id)) {
       const ok = buyItem(id, cost)
       if (!ok) {
         setFeedback('Not enough tokens ✗')
         setTimeout(() => setFeedback(null), 2000)
         return
       }
-      setFeedback('Unlocked! ✦')
-      setTimeout(() => setFeedback(null), 2000)
+      if (cost > 0) {
+        setFeedback('Unlocked! ✦')
+        setTimeout(() => setFeedback(null), 2000)
+      }
     }
     equipAvatar(id)
   }

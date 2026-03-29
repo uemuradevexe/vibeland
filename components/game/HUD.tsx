@@ -57,6 +57,11 @@ export default function HUD() {
   const pendingAchievement  = useGameStore((s) => s.pendingAchievement)
   const dismissAchievement  = useGameStore((s) => s.dismissAchievement)
 
+  // Cleanup chat cooldown timer on unmount
+  useEffect(() => {
+    return () => { if (cooldownRef.current) clearTimeout(cooldownRef.current) }
+  }, [])
+
   // Daily bonus toast
   useEffect(() => {
     if (dailyBonusPending > 0) {

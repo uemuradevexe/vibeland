@@ -10,6 +10,11 @@ import { resolvePosition } from '@/lib/collision'
 const SPEED = 5          // units per second
 const BOUNDS = 17        // ±17 units
 
+// Pre-allocated vectors — reused every frame to avoid GC pressure
+const _forward = new THREE.Vector3()
+const _right   = new THREE.Vector3()
+const _up      = new THREE.Vector3(0, 1, 0)
+
 const KEYS: Record<string, [number, number]> = {
   KeyW: [0, -1], ArrowUp: [0, -1],
   KeyS: [0,  1], ArrowDown: [0,  1],
@@ -39,13 +44,10 @@ export default function KeyboardInput() {
     if (held.current.size === 0) return
 
     // Compute camera's horizontal forward/right vectors (projected onto XZ plane)
-    const forward = new THREE.Vector3()
-    camera.getWorldDirection(forward)
-    forward.y = 0
-    forward.normalize()
-
-    const right = new THREE.Vector3()
-    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize()
+    camera.getWorldDirection(_forward)
+    _forward.y = 0
+    _forward.normalize()
+    _right.crossVectors(_forward, _up).normalize()
 
     let mx = 0
     let mz = 0
@@ -53,8 +55,8 @@ export default function KeyboardInput() {
       const dir = KEYS[code]
       if (!dir) continue
       // dir[0] = local X (right), dir[1] = local Z (forward)
-      mx += right.x * dir[0] + forward.x * dir[1]
-      mz += right.z * dir[0] + forward.z * dir[1]
+      mx += _right.x * dir[0] + _forward.x * dir[1]
+      mz += _right.z * dir[0] + _forward.z * dir[1]
     }
 
     if (mx === 0 && mz === 0) return

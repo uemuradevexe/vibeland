@@ -23,6 +23,10 @@ export default function RemotePlayers() {
       interp.z += (p.z - interp.z) * Math.min(delta * 12, 1)
       interpRef.current[id] = interp
     }
+    // Remove stale interp entries for players who have left
+    for (const id of Object.keys(interpRef.current)) {
+      if (!store.remotePlayers[id]) delete interpRef.current[id]
+    }
   })
 
   return (
