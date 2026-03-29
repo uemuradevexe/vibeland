@@ -90,6 +90,7 @@ export function useMultiplayer() {
             room: store.currentRoom,
           })
           break
+        }
 
         case 'chat':
           store.upsertRemotePlayer({ id, chat: String(payload.message ?? ''), chatTimer: 4 })

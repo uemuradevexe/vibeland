@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGameStore } from '@/store/gameStore'
 import ClaudeOrb from './ClaudeOrb'
