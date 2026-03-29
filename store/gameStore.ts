@@ -17,19 +17,7 @@ import {
   type AchievementsState,
   type GameStats,
 } from '@/lib/achievements'
-import { getLevel, loadGithubLevel, saveGithubLevel } from '@/lib/githubLevel'
-
-export interface NPC {
-  id: string
-  color: string
-  x: number
-  z: number
-  targetX: number
-  targetZ: number
-  phrase: string | null
-  phraseTimer: number
-  wanderTimer: number
-}
+import { loadGithubLevel, saveGithubLevel } from '@/lib/githubLevel'
 
 export interface RemotePlayer {
   id: string
@@ -82,7 +70,6 @@ export interface GameState {
 
   // World
   currentRoom: RoomId
-  npcs: NPC[]
 
   // Multiplayer
   wsConnected: boolean
@@ -95,7 +82,6 @@ export interface GameState {
   sendChat: (message: string) => void
   sendEmote: (emote: string) => void
   changeRoom: (room: RoomId) => void
-  setNPCs: (npcs: NPC[]) => void
   tickGame: (delta: number) => void
 
   // Multiplayer actions
@@ -155,7 +141,6 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
   pendingAchievement: null,
   currentRoom: 'plaza',
-  npcs: [],
   wsConnected: false,
   remotePlayers: {},
 
@@ -200,7 +185,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       playerZ: 0,
       playerTargetX: 0,
       playerTargetZ: 0,
-      npcs: [],
       playerChat: null,
       playerEmote: null,
       remotePlayers: {},
@@ -208,9 +192,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     })
     get().checkAchievements()
   },
-
-  setNPCs: (npcs) => set({ npcs }),
-
   // Multiplayer
   setRemotePlayers: (players) => set({
     remotePlayers: Object.fromEntries(
@@ -247,8 +228,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     const colliders = ROOMS[state.currentRoom].colliders
 
     const PLAYER_SPEED = 5
-    const NPC_SPEED    = 2.5
-
     // ── Player movement ─────────────────────────────────────────────────
     const dx = state.playerTargetX - state.playerX
     const dz = state.playerTargetZ - state.playerZ
@@ -266,39 +245,6 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const playerChatTimer  = Math.max(0, state.playerChatTimer  - delta)
     const playerEmoteTimer = Math.max(0, state.playerEmoteTimer - delta)
-
-    // ── NPC movement ────────────────────────────────────────────────────
-    const npcs = state.npcs.map((npc) => {
-      const ndx = npc.targetX - npc.x
-      const ndz = npc.targetZ - npc.z
-      const npcDist = Math.sqrt(ndx * ndx + ndz * ndz)
-      let nx: number, nz: number
-      if (npcDist < 0.05) {
-        nx = npc.targetX
-        nz = npc.targetZ
-      } else {
-        const step = Math.min(NPC_SPEED * delta, npcDist)
-        nx = npc.x + (ndx / npcDist) * step
-        nz = npc.z + (ndz / npcDist) * step
-      }
-      ;[nx, nz] = resolvePosition(nx, nz, colliders)
-
-      const phraseTimer = Math.max(0, npc.phraseTimer - delta)
-      let wanderTimer = npc.wanderTimer - delta
-      let targetX = npc.targetX
-      let targetZ = npc.targetZ
-
-      if (wanderTimer <= 0) {
-        let wx = (Math.random() - 0.5) * 28
-        let wz = (Math.random() - 0.5) * 28
-        ;[wx, wz] = resolvePosition(wx, wz, colliders)
-        targetX = wx
-        targetZ = wz
-        wanderTimer = 4 + Math.random() * 6
-      }
-
-      return { ...npc, x: nx, z: nz, targetX, targetZ, phraseTimer, wanderTimer, phrase: phraseTimer > 0 ? npc.phrase : null }
-    })
 
     // ── Remote player timers ────────────────────────────────────────────
     const remotePlayers: Record<string, RemotePlayer> = {}
@@ -321,7 +267,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       playerChatTimer,
       playerEmote: playerEmoteTimer > 0 ? state.playerEmote : null,
       playerEmoteTimer,
-      npcs,
       remotePlayers,
     }
   }),
