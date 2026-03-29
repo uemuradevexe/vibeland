@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
-  const user = req.nextUrl.searchParams.get('user')
-  if (!user) return NextResponse.json({ error: 'Missing user' }, { status: 400 })
+  const raw = req.nextUrl.searchParams.get('user')
+  if (!raw) return NextResponse.json({ error: 'Missing user' }, { status: 400 })
+
+  // Sanitize: GitHub usernames are alphanumeric + hyphens only
+  const user = raw.replace(/[^a-zA-Z0-9-]/g, '')
+  if (!user || user.length > 39) return NextResponse.json({ error: 'Invalid username' }, { status: 400 })
 
   const token = process.env.GITHUB_TOKEN
   const headers: Record<string, string> = {

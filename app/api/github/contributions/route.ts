@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ contributions: total })
   } catch (e) {
-    console.error('[github api]', e)
+    console.error('[github api]', e instanceof Error ? e.message : 'unknown error')
     return NextResponse.json({ contributions: 0 })
   }
 }
