@@ -19,6 +19,8 @@ import {
   type GameStats,
 } from '@/lib/achievements'
 import { loadGithubLevel, saveGithubLevel } from '@/lib/githubLevel'
+import { loadHouseItems, saveHouseItems } from '@/lib/houseStore'
+import type { PlacedFurniture, FurnitureId } from '@/lib/furniture'
 
 export interface RemotePlayer {
   id: string
@@ -69,6 +71,14 @@ export interface GameState {
   achievements: AchievementsState
   gameStats: GameStats
   pendingAchievement: AchievementId | null
+
+  // House
+  houseItems: PlacedFurniture[]
+  houseEditMode: boolean
+  addFurniture: (type: FurnitureId, x: number, z: number) => void
+  removeFurniture: (id: string) => void
+  rotateFurniture: (id: string) => void
+  setHouseEditMode: (enabled: boolean) => void
 
   // World
   currentRoom: RoomId
@@ -191,6 +201,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       playerEmote: null,
       remotePlayers: {},
       gameStats: newStats,
+      houseEditMode: false,
     })
     get().checkAchievements()
   },
@@ -345,6 +356,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       githubUsername: githubData?.username ?? '',
       githubLevel: githubData?.level ?? 1,
       githubContributions: githubData?.contributions ?? 0,
+      houseItems: loadHouseItems(),
     })
 
     get().checkAchievements()
@@ -352,6 +364,29 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   dismissDailyBonus: () => set({ dailyBonusPending: 0 }),
   dismissOnlineReward: () => set({ onlineRewardPending: 0 }),
+
+  // ── House ────────────────────────────────────────────────────────────
+  addFurniture: (type, x, z) => {
+    const items = [
+      ...get().houseItems,
+      { id: crypto.randomUUID(), type, x, z, rotation: 0 },
+    ]
+    saveHouseItems(items)
+    set({ houseItems: items })
+  },
+  removeFurniture: (id) => {
+    const items = get().houseItems.filter((i) => i.id !== id)
+    saveHouseItems(items)
+    set({ houseItems: items })
+  },
+  rotateFurniture: (id) => {
+    const items = get().houseItems.map((i) =>
+      i.id === id ? { ...i, rotation: (i.rotation + Math.PI / 2) % (Math.PI * 2) } : i,
+    )
+    saveHouseItems(items)
+    set({ houseItems: items })
+  },
+  setHouseEditMode: (enabled) => set({ houseEditMode: enabled }),
 
   // ── GitHub level ────────────────────────────────────────────────────
   setGithubLevel: (username, level, contributions) => {

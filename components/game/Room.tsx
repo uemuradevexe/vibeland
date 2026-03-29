@@ -11,6 +11,7 @@ import GardenRoom from '@/components/rooms/GardenRoom'
 import RooftopRoom from '@/components/rooms/RooftopRoom'
 import DungeonRoom from '@/components/rooms/DungeonRoom'
 import SpaceRoom from '@/components/rooms/SpaceRoom'
+import HouseRoom from '@/components/rooms/HouseRoom'
 import ClaudeOrb from './ClaudeOrb'
 import RemotePlayers from './RemotePlayers'
 
@@ -24,6 +25,7 @@ const ROOM_COMPONENTS = {
   rooftop: RooftopRoom,
   dungeon: DungeonRoom,
   space: SpaceRoom,
+  house: HouseRoom,
 }
 
 export default function Room() {

@@ -1,6 +1,6 @@
 import type { Collider } from './collision'
 
-export type RoomId = 'plaza' | 'cafe' | 'beach' | 'library' | 'arcade' | 'garden' | 'rooftop' | 'dungeon' | 'space'
+export type RoomId = 'plaza' | 'cafe' | 'beach' | 'library' | 'arcade' | 'garden' | 'rooftop' | 'dungeon' | 'space' | 'house'
 
 export interface Door {
   side: 'left' | 'right'
@@ -250,5 +250,19 @@ export const ROOMS: Record<RoomId, RoomConfig> = {
       { cx: -10, cz: 10,  hw: 1.5, hd: 1.5 },      // cargo pod
       { cx: 10,  cz: 10,  hw: 1.5, hd: 1.5 },      // cargo pod
     ],
+  },
+  house: {
+    id: 'house',
+    name: 'Minha Casa',
+    emoji: '🏠',
+    skyColor: '#1a1a2e',
+    groundColor: '#2a3a5a',
+    accentColor: '#f0c84a',
+    doors: [
+      { side: 'left', leadsTo: 'plaza', label: 'Plaza', emoji: '🏙️' },
+    ],
+    npcCount: 0,
+    npcColors: [],
+    colliders: [],
   },
 }
