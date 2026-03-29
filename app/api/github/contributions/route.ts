@@ -38,8 +38,11 @@ export async function GET(req: NextRequest) {
 
     if (!res.ok) throw new Error(`GitHub API ${res.status}`)
     const data = await res.json()
-    const coll = data?.data?.user?.contributionsCollection
+    if (data?.data?.user === null) {
+      return NextResponse.json({ error: 'GitHub user not found' }, { status: 404 })
+    }
 
+    const coll = data?.data?.user?.contributionsCollection
     if (!coll) return NextResponse.json({ contributions: 0 })
 
     const total =
@@ -50,7 +53,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ contributions: total })
   } catch (e) {
-    console.error('[github api]', e)
+    console.error('[github api]', e instanceof Error ? e.message : 'unknown error')
     return NextResponse.json({ contributions: 0 })
   }
 }

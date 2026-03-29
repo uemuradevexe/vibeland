@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Html } from '@react-three/drei'
 import { useGameStore } from '@/store/gameStore'
+import { dragStateRef } from '@/components/game/GameCanvas'
 import type { Door as DoorConfig } from '@/lib/roomConfig'
 
 interface DoorProps {
@@ -22,7 +23,7 @@ export default function Door({ config, accentColor }: DoorProps) {
       {/* Invisible click zone */}
       <mesh
         position={[0, 1.2, 0]}
-        onClick={(e) => { e.stopPropagation(); changeRoom(config.leadsTo) }}
+        onClick={(e) => { e.stopPropagation(); if (!dragStateRef.current.didDrag) changeRoom(config.leadsTo) }}
         onPointerEnter={() => setHovered(true)}
         onPointerLeave={() => setHovered(false)}
       >

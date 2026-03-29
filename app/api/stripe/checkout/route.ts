@@ -22,13 +22,13 @@ export async function POST(req: NextRequest) {
       mode: 'payment',
       line_items: [{ price: pack.priceId, quantity: 1 }],
       metadata: { tokens: String(pack.tokens) },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/game?payment=success&tokens=${pack.tokens}`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/game?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/game`,
     })
 
     return NextResponse.json({ url: session.url })
   } catch (e) {
-    console.error('[stripe checkout]', e)
+    console.error('[stripe checkout]', e instanceof Error ? e.message : 'unknown error')
     return NextResponse.json({ error: 'checkout failed' }, { status: 500 })
   }
 }

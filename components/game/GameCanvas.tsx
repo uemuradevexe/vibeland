@@ -17,6 +17,11 @@ import { useTokenRewards } from '@/hooks/useTokenRewards'
 type DragState = { startX: number; startY: number; didDrag: boolean }
 export const dragStateRef = { current: { startX: 0, startY: 0, didDrag: false } as DragState }
 
+// Pre-allocated vectors for CameraRig — reused every frame
+const _dest      = new THREE.Vector3()
+const _prevTarget = new THREE.Vector3()
+const _delta     = new THREE.Vector3()
+
 function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null)
   const smoothTarget = useRef(new THREE.Vector3(0, 0.8, 0))
@@ -25,12 +30,12 @@ function CameraRig() {
   useFrame(() => {
     if (!controlsRef.current) return
     const { playerX, playerZ } = useGameStore.getState()
-    const dest = new THREE.Vector3(playerX, 0.8, playerZ)
-    smoothTarget.current.lerp(dest, 0.08)
-    const prevTarget = controlsRef.current.target.clone()
-    const delta = smoothTarget.current.clone().sub(prevTarget)
+    _dest.set(playerX, 0.8, playerZ)
+    smoothTarget.current.lerp(_dest, 0.08)
+    _prevTarget.copy(controlsRef.current.target)
+    _delta.copy(smoothTarget.current).sub(_prevTarget)
     controlsRef.current.target.copy(smoothTarget.current)
-    camera.position.add(delta)
+    camera.position.add(_delta)
     controlsRef.current.update()
   })
 
