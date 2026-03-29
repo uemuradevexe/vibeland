@@ -20,6 +20,7 @@ const EMOTES = [
 
 export default function HUD() {
   const [chatInput, setChatInput]     = useState('')
+  const [chatCooldown, setChatCooldown] = useState(false)
   const [showEmotes, setShowEmotes]   = useState(false)
   const [showColors, setShowColors]   = useState(false)
   const [showMap, setShowMap]         = useState(false)
@@ -36,6 +37,7 @@ export default function HUD() {
   const [githubError, setGithubError] = useState<string | null>(null)
   const [showAchievementToast, setShowAchievementToast] = useState(false)
   const [muted, setMuted] = useState(isMuted)
+  const cooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const sendChat    = useGameStore((s) => s.sendChat)
   const sendEmote   = useGameStore((s) => s.sendEmote)
@@ -150,6 +152,11 @@ export default function HUD() {
     changeRoom(roomId)
     playRoomChange()
     setShowMap(false)
+  }
+
+  function handleMute() {
+    const next = toggleMute()
+    setMuted(next)
   }
 
   return (
