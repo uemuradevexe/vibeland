@@ -60,8 +60,6 @@ export function useMultiplayer() {
     const handlePresence = (message: Ably.PresenceMessage) => {
       if (message.clientId === clientId) return
 
-    const syncRoomMembers = async (channel: Ably.RealtimeChannel) => {
-      const members = await channel.presence.get()
       const store = useGameStore.getState()
       if (message.action === 'leave') {
         store.removeRemotePlayer(message.clientId)
@@ -92,7 +90,6 @@ export function useMultiplayer() {
             room: store.currentRoom,
           })
           break
-        }
 
         case 'chat':
           store.upsertRemotePlayer({ id, chat: String(payload.message ?? ''), chatTimer: 4 })

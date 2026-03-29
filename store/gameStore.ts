@@ -19,6 +19,8 @@ import {
   type GameStats,
 } from '@/lib/achievements'
 import { loadGithubLevel, saveGithubLevel } from '@/lib/githubLevel'
+import { loadHouseItems, saveHouseItems } from '@/lib/houseStore'
+import type { PlacedFurniture, FurnitureId } from '@/lib/furniture'
 
 export interface RemotePlayer {
   id: string
@@ -139,6 +141,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   onlineRewardPending: 0,
   houseItems: [],
   houseEditMode: false,
+  friends: [],
   githubUsername: '',
   githubLevel: 1,
   githubContributions: 0,

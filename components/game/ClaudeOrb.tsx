@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useMemo } from 'react'
+import { useRef, useMemo, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
@@ -60,25 +60,18 @@ export default function ClaudeOrb({
 
   const prevPos    = useRef({ x, z })
   const targetRotY = useRef(0)
-  const walkPhase  = useRef(0)
-  const idlePhase  = useRef(0)
-
-  const limbColor = darkenHex(color)
-  const scale = isPlayer ? 1.1 : 1.0
-  const headTop = avatarDef.headTopY
-  const isDefault = avatar === 'default' || avatarDef.pieces.length === 0
   const phaseKey = `${name}:${color}:${avatar}`
   const initialWalkPhase = useMemo(() => seededPhase(phaseKey, 17), [phaseKey])
   const initialIdlePhase = useMemo(() => seededPhase(phaseKey, 53), [phaseKey])
   const walkPhase  = useRef(initialWalkPhase)
   const idlePhase  = useRef(initialIdlePhase)
 
-  const levelColor = LEVEL_COLORS[clampedLevel] ?? '#9E9E9E'
+  const limbColor = darkenHex(color)
+  const scale = isPlayer ? 1.1 : 1.0
+  const headTop = avatarDef.headTopY
+  const isDefault = avatar === 'default' || avatarDef.pieces.length === 0
 
-  useEffect(() => {
-    walkPhase.current = Math.random() * Math.PI * 2
-    idlePhase.current = Math.random() * Math.PI * 2
-  }, [])
+  const levelColor = LEVEL_COLORS[clampedLevel] ?? '#9E9E9E'
 
   useFrame((_, delta) => {
     if (!bodyRef.current || !floatRef.current) return
