@@ -1,105 +1,84 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGameStore } from '@/store/gameStore'
 import ClaudeOrb from './ClaudeOrb'
 import type { HatId, VehicleId } from '@/lib/skins'
 import type { AvatarId } from '@/lib/avatars'
-import type { Friend } from '@/lib/friends'
+import * as THREE from 'three'
 
-interface RemotePlayerActorProps {
-  id: string
-  name: string
-  color: string
-  hat: HatId
-  vehicle: VehicleId
-  avatar: AvatarId
-  level: number
-  chat: string | null
-  emote: string | null
-  targetX: number
-  targetZ: number
-  isFriend: boolean
-  addFriend: (friend: Friend) => void
-  removeFriend: (id: string) => void
-}
-
-function RemotePlayerActor({
-  id,
-  name,
+function RemotePlayerOrb({
+  x,
+  z,
   color,
+  name,
+  chat,
+  emote,
   hat,
   vehicle,
   avatar,
   level,
-  chat,
-  emote,
-  targetX,
-  targetZ,
-  isFriend,
-  addFriend,
-  removeFriend,
-}: RemotePlayerActorProps) {
-  const [position, setPosition] = useState({ x: targetX, z: targetZ })
+}: {
+  x: number
+  z: number
+  color: string
+  name: string
+  chat: string | null
+  emote: string | null
+  hat: HatId
+  vehicle: VehicleId
+  avatar: AvatarId
+  level: number
+}) {
+  const groupRef = useRef<THREE.Group>(null)
 
   useFrame((_, delta) => {
-    setPosition((current) => {
-      const nextX = current.x + (targetX - current.x) * Math.min(delta * 12, 1)
-      const nextZ = current.z + (targetZ - current.z) * Math.min(delta * 12, 1)
-      if (Math.abs(nextX - current.x) < 0.0005 && Math.abs(nextZ - current.z) < 0.0005) return current
-      return { x: nextX, z: nextZ }
-    })
+    const group = groupRef.current
+    if (!group) return
+    group.position.x += (x - group.position.x) * Math.min(delta * 12, 1)
+    group.position.z += (z - group.position.z) * Math.min(delta * 12, 1)
   })
 
   return (
-    <ClaudeOrb
-      x={position.x}
-      z={position.z}
-      color={color}
-      name={name}
-      chat={chat}
-      emote={emote}
-      hat={hat}
-      vehicle={vehicle}
-      avatar={avatar}
-      level={level}
-      isFriend={isFriend}
-      onAddFriend={() => addFriend({ id, name, color, avatar })}
-      onRemoveFriend={() => removeFriend(id)}
-    />
+    <group ref={groupRef} position={[x, 0, z]}>
+      <ClaudeOrb
+        x={0}
+        z={0}
+        color={color}
+        name={name}
+        chat={chat}
+        emote={emote}
+        hat={hat}
+        vehicle={vehicle}
+        avatar={avatar}
+        level={level}
+      />
+    </group>
   )
 }
 
 export default function RemotePlayers() {
   const remotePlayers = useGameStore((s) => s.remotePlayers)
-  const currentRoom = useGameStore((s) => s.currentRoom)
-  const friends = useGameStore((s) => s.friends)
-  const addFriend = useGameStore((s) => s.addFriend)
-  const removeFriend = useGameStore((s) => s.removeFriend)
-  const friendIds = new Set(friends.map((friend) => friend.id))
+  const currentRoom   = useGameStore((s) => s.currentRoom)
 
   return (
     <>
       {Object.values(remotePlayers)
         .filter((p) => p.room === currentRoom)
         .map((p) => (
-          <RemotePlayerActor
+          <RemotePlayerOrb
             key={p.id}
-            id={p.id}
-            name={p.name}
+            x={p.x}
+            z={p.z}
             color={p.color}
+            name={p.name}
             chat={p.chat}
             emote={p.emote}
             hat={p.hat as HatId}
             vehicle={p.vehicle as VehicleId}
             avatar={(p.avatar as AvatarId) ?? 'default'}
             level={p.level ?? 1}
-            targetX={p.x}
-            targetZ={p.z}
-            isFriend={friendIds.has(p.id)}
-            addFriend={addFriend}
-            removeFriend={removeFriend}
           />
         ))}
     </>
