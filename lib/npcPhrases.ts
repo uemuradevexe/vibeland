@@ -65,6 +65,13 @@ export const NPC_PHRASES: Record<RoomId, string[]> = {
     'Zero gravity, zero loss! 🛸',
     'Embeddings estelares detectados 🌟',
   ],
+  house: [
+    'Decorei tudo com muito contexto aconchegante 🏠',
+    'Essa sala ficou ótima para pair programming 🪑',
+    'Home office com latência baixa é outro nível ✨',
+    'Organizando os móveis como se fossem embeddings 📦',
+    'Nada melhor que recarregar os tokens em casa ☕',
+  ],
 }
 
 export function getRandomPhrase(roomId: RoomId): string {

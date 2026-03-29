@@ -6,6 +6,7 @@ import { ROOMS } from '@/lib/roomConfig'
 import { ORB_COLORS } from '@/lib/orbColors'
 import WardrobeModal from '@/components/ui/WardrobeModal'
 import ProfileModal from '@/components/ui/ProfileModal'
+import FurnitureShopModal from '@/components/ui/FurnitureShopModal'
 import BeachMinigame from '@/components/game/BeachMinigame'
 import AchievementsModal from '@/components/ui/AchievementsModal'
 import { getLevel } from '@/lib/githubLevel'
@@ -24,6 +25,7 @@ export default function HUD() {
   const [showMap, setShowMap]         = useState(false)
   const [showWardrobe, setShowWardrobe] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
+  const [showFurnitureShop, setShowFurnitureShop] = useState(false)
   const [showMinigame, setShowMinigame] = useState(false)
   const [showDailyToast, setShowDailyToast] = useState(false)
   const [showAchievements, setShowAchievements] = useState(false)
@@ -56,6 +58,8 @@ export default function HUD() {
   const setGithubLevel      = useGameStore((s) => s.setGithubLevel)
   const pendingAchievement  = useGameStore((s) => s.pendingAchievement)
   const dismissAchievement  = useGameStore((s) => s.dismissAchievement)
+  const houseEditMode       = useGameStore((s) => s.houseEditMode)
+  const setHouseEditMode    = useGameStore((s) => s.setHouseEditMode)
 
   // Cleanup chat cooldown timer on unmount
   useEffect(() => {
@@ -246,6 +250,9 @@ export default function HUD() {
       {/* Achievements modal */}
       {showAchievements && <AchievementsModal onClose={() => setShowAchievements(false)} />}
 
+      {/* Furniture shop modal */}
+      {showFurnitureShop && <FurnitureShopModal onClose={() => setShowFurnitureShop(false)} />}
+
       {/* GitHub connect modal */}
       {showGithubModal && (
         <div
@@ -407,7 +414,7 @@ export default function HUD() {
         </button>
 
         {/* Minigame button — beach only */}
-        {currentRoom === 'beach' && (
+        {currentRoom === 'beach' ? (
           <button
             onClick={() => setShowMinigame(true)}
             className="bg-[#1a3a20] border-2 border-[#f0c060] rounded-xl p-3 text-xl hover:bg-[#2a4a30] transition-colors flex-shrink-0 animate-pulse"
@@ -416,7 +423,43 @@ export default function HUD() {
           >
             🎮
           </button>
-        )}
+        ) : null}
+
+        {/* House button — go to my house */}
+        <button
+          onClick={() => changeRoom('house')}
+          className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-2.5 sm:p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          aria-label="Minha casa"
+          title="Minha Casa"
+        >
+          🏠
+        </button>
+
+        {/* House edit mode — house only */}
+        {currentRoom === 'house' ? (
+          <>
+            <button
+              onClick={() => setHouseEditMode(!houseEditMode)}
+              className={`rounded-xl p-2.5 sm:p-3 text-xl transition-colors flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center border-2 ${
+                houseEditMode
+                  ? 'bg-[#3a4a8a] border-[#7a8acc] text-white'
+                  : 'bg-[#1a2744] border-[#2a4a7f] hover:bg-[#243060]'
+              }`}
+              aria-label="Modo de decoração"
+              title="Decorar casa"
+            >
+              🛠️
+            </button>
+            <button
+              onClick={() => setShowFurnitureShop(true)}
+              className="bg-[#1a2744] border-2 border-[#f0c84a] rounded-xl p-2.5 sm:p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
+              aria-label="Loja de móveis"
+              title="Loja de Móveis"
+            >
+              🛒
+            </button>
+          </>
+        ) : null}
       </div>
     </div>
   )
