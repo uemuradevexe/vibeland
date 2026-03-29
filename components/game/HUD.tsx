@@ -9,9 +9,10 @@ import ProfileModal from '@/components/ui/ProfileModal'
 import FurnitureShopModal from '@/components/ui/FurnitureShopModal'
 import BeachMinigame from '@/components/game/BeachMinigame'
 import AchievementsModal from '@/components/ui/AchievementsModal'
+import FriendsModal from '@/components/ui/FriendsModal'
 import { getLevel } from '@/lib/githubLevel'
 import { ACHIEVEMENTS } from '@/lib/achievements'
-import { playChat, playEmote, playRoomChange, toggleMute, isMuted } from '@/lib/sounds'
+import { isMuted, playChat, playEmote, playRoomChange, toggleMute } from '@/lib/sounds'
 
 const EMOTES = [
   '❤️', '✨', '😂', '🤔', '👋', '🎉',
@@ -20,6 +21,7 @@ const EMOTES = [
 
 export default function HUD() {
   const [chatInput, setChatInput]     = useState('')
+  const [chatCooldown, setChatCooldown] = useState(false)
   const [showEmotes, setShowEmotes]   = useState(false)
   const [showColors, setShowColors]   = useState(false)
   const [showMap, setShowMap]         = useState(false)
@@ -27,7 +29,9 @@ export default function HUD() {
   const [showProfile, setShowProfile] = useState(false)
   const [showFurnitureShop, setShowFurnitureShop] = useState(false)
   const [showMinigame, setShowMinigame] = useState(false)
+  const [showFriends, setShowFriends] = useState(false)
   const [showDailyToast, setShowDailyToast] = useState(false)
+  const [showOnlineToast, setShowOnlineToast] = useState(false)
   const [showAchievements, setShowAchievements] = useState(false)
   const [showGithubModal, setShowGithubModal] = useState(false)
   const [githubInput, setGithubInput] = useState('')
@@ -66,6 +70,11 @@ export default function HUD() {
     return () => { if (cooldownRef.current) clearTimeout(cooldownRef.current) }
   }, [])
 
+  // Cleanup chat cooldown timer on unmount
+  useEffect(() => {
+    return () => { if (cooldownRef.current) clearTimeout(cooldownRef.current) }
+  }, [])
+
   // Daily bonus toast
   useEffect(() => {
     if (dailyBonusPending > 0) {
@@ -75,7 +84,6 @@ export default function HUD() {
     }
   }, [dailyBonusPending, dismissDailyBonus])
 
-  // Online reward toast
   useEffect(() => {
     if (onlineRewardPending > 0) {
       setShowOnlineToast(true)
@@ -157,6 +165,11 @@ export default function HUD() {
     setShowMap(false)
   }
 
+  function handleMute() {
+    const next = toggleMute()
+    setMuted(next)
+  }
+
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between">
       {/* Top bar */}
@@ -174,6 +187,13 @@ export default function HUD() {
           </span>
         </button>
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleMute}
+            className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-3 py-1.5 font-mono text-sm text-[#7a9cc8] backdrop-blur-sm hover:bg-[#1a2744cc] transition-colors"
+            title={muted ? 'Unmute' : 'Mute'}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
           <button
             onClick={() => setShowGithubModal(true)}
             className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-4 py-1.5 font-mono text-sm text-yellow-400 backdrop-blur-sm hover:bg-[#1a2744cc] transition-colors"
@@ -393,6 +413,13 @@ export default function HUD() {
           aria-label="Achievements"
         >
           🏆
+        </button>
+
+        <button
+          onClick={() => { setShowFriends(true); setShowEmotes(false); setShowColors(false) }}
+          className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0"
+        >
+          👥
         </button>
 
         {/* Map button */}

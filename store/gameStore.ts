@@ -8,6 +8,7 @@ import {
   loadEquipped, saveEquipped,
   loadInventory, saveInventory,
 } from '@/lib/tokenStore'
+import { loadFriends, saveFriends, type Friend } from '@/lib/friends'
 import {
   ACHIEVEMENTS,
   loadAchievements, saveAchievements,
@@ -59,6 +60,7 @@ export interface GameState {
   inventory: string[]
   dailyBonusPending: number
   onlineRewardPending: number
+  friends: Friend[]
 
   // GitHub level
   githubUsername: string
@@ -107,6 +109,8 @@ export interface GameState {
   initPlayer: () => void
   dismissDailyBonus: () => void
   dismissOnlineReward: () => void
+  addFriend: (friend: Friend) => void
+  removeFriend: (id: string) => void
 
   // GitHub level
   setGithubLevel: (username: string, level: number, contributions: number) => void
@@ -327,6 +331,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const inventory = loadInventory()
     const achievements = loadAchievements()
     const gameStats = loadStats()
+    const friends = loadFriends()
 
     // Track login count
     const newStats: GameStats = { ...gameStats, loginCount: gameStats.loginCount + 1 }
@@ -349,6 +354,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       playerVehicle: equipped.vehicle as VehicleId,
       playerAvatar:  equipped.avatar  as AvatarId,
       inventory,
+      friends,
       achievements,
       gameStats: newStats,
       githubUsername: githubData?.username ?? '',
@@ -362,6 +368,17 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   dismissDailyBonus: () => set({ dailyBonusPending: 0 }),
   dismissOnlineReward: () => set({ onlineRewardPending: 0 }),
+  addFriend: (friend) => set((state) => {
+    if (state.friends.some((existing) => existing.id === friend.id)) return state
+    const friends = [...state.friends, friend]
+    saveFriends(friends)
+    return { friends }
+  }),
+  removeFriend: (id) => set((state) => {
+    const friends = state.friends.filter((friend) => friend.id !== id)
+    saveFriends(friends)
+    return { friends }
+  }),
 
   // ── House ────────────────────────────────────────────────────────────
   addFurniture: (type, x, z) => {

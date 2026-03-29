@@ -30,6 +30,14 @@ function darkenHex(hex: string, amount = 0.62): string {
   return `#${d(r)}${d(g)}${d(b)}`
 }
 
+function seededPhase(input: string, offset = 0) {
+  let hash = 0
+  for (let i = 0; i < input.length; i++) {
+    hash = (hash * 31 + input.charCodeAt(i) + offset) >>> 0
+  }
+  return (hash % 6283) / 1000
+}
+
 export default function ClaudeOrb({
   x, z = 0, color, name, chat, emote,
   isPlayer, hat = 'none', vehicle = 'none',
@@ -59,6 +67,11 @@ export default function ClaudeOrb({
   const scale = isPlayer ? 1.1 : 1.0
   const headTop = avatarDef.headTopY
   const isDefault = avatar === 'default' || avatarDef.pieces.length === 0
+  const phaseKey = `${name}:${color}:${avatar}`
+  const initialWalkPhase = useMemo(() => seededPhase(phaseKey, 17), [phaseKey])
+  const initialIdlePhase = useMemo(() => seededPhase(phaseKey, 53), [phaseKey])
+  const walkPhase  = useRef(initialWalkPhase)
+  const idlePhase  = useRef(initialIdlePhase)
 
   const levelColor = LEVEL_COLORS[clampedLevel] ?? '#9E9E9E'
 

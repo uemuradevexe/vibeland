@@ -4,8 +4,8 @@ import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
-// Full cycle: 10 minutes (600 seconds)
-const CYCLE_DURATION = 600
+// Full cycle: 20 minutes (1200 seconds)
+const CYCLE_DURATION = 1200
 
 // Keyframes: [time 0-1, ambient intensity, directional intensity, ambient color hex, directional color hex]
 const KEYFRAMES = [
