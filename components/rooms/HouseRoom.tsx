@@ -186,7 +186,7 @@ function FurnitureShape({
 
 // ── Floor click handler in edit mode ─────────────────────────────────────────
 
-function EditFloor({ selectedType, onPlace }: { selectedType: FurnitureId; onPlace: (x: number, z: number) => void }) {
+function EditFloor({ onPlace }: { onPlace: (x: number, z: number) => void }) {
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
@@ -208,11 +208,16 @@ function EditFloor({ selectedType, onPlace }: { selectedType: FurnitureId; onPla
 // ── Main HouseRoom ────────────────────────────────────────────────────────────
 
 export default function HouseRoom() {
-  const houseItems     = useGameStore((s) => s.houseItems)
-  const houseEditMode  = useGameStore((s) => s.houseEditMode)
-  const addFurniture   = useGameStore((s) => s.addFurniture)
+  const houseItems      = useGameStore((s) => s.houseItems)
+  const visitedHouseItems = useGameStore((s) => s.visitedHouseItems)
+  const houseEditMode   = useGameStore((s) => s.houseEditMode)
+  const houseOwnerId    = useGameStore((s) => s.houseOwnerId)
+  const houseOwnerName  = useGameStore((s) => s.houseOwnerName)
+  const addFurniture    = useGameStore((s) => s.addFurniture)
   const removeFurniture = useGameStore((s) => s.removeFurniture)
   const rotateFurniture = useGameStore((s) => s.rotateFurniture)
+  const isOwnerHouse = !houseOwnerId
+  const renderedItems = isOwnerHouse ? houseItems : visitedHouseItems
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [placingType, setPlacingType] = useState<FurnitureId | null>(null)
@@ -227,7 +232,7 @@ export default function HouseRoom() {
     setPlacingType(null)
   }
 
-  const selectedItem = houseItems.find((i) => i.id === selectedId)
+  const selectedItem = renderedItems.find((i) => i.id === selectedId)
 
   return (
     <>
@@ -282,22 +287,22 @@ export default function HouseRoom() {
       </mesh>
 
       {/* Placed furniture */}
-      {houseItems.map((item) => (
+      {renderedItems.map((item) => (
         <FurnitureMesh
           key={item.id}
           item={item}
-          editMode={houseEditMode}
+          editMode={houseEditMode && isOwnerHouse}
           onSelect={handleSelect}
         />
       ))}
 
       {/* Edit floor overlay for placing */}
-      {houseEditMode && placingType && (
-        <EditFloor selectedType={placingType} onPlace={handlePlace} />
+      {houseEditMode && isOwnerHouse && placingType && (
+        <EditFloor onPlace={handlePlace} />
       )}
 
       {/* Furniture action tooltip */}
-      {houseEditMode && selectedItem && (
+      {houseEditMode && isOwnerHouse && selectedItem && (
         <Html
           position={[selectedItem.x, 2.5, selectedItem.z]}
           center
@@ -330,7 +335,7 @@ export default function HouseRoom() {
       )}
 
       {/* Edit mode: place picker panel */}
-      {houseEditMode && (
+      {houseEditMode && isOwnerHouse && (
         <Html
           position={[0, 0, HALF - 1]}
           center
@@ -362,11 +367,29 @@ export default function HouseRoom() {
         </Html>
       )}
 
+      {!isOwnerHouse && (
+        <Html position={[0, 3.2, 0]} center>
+          <div
+            style={{
+              background: 'rgba(0,0,0,0.75)',
+              border: '1px solid rgba(122,156,200,0.45)',
+              borderRadius: 10,
+              color: '#fff',
+              padding: '8px 12px',
+              fontSize: 12,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Visitando a casa de {houseOwnerName ?? 'Amigo'}
+          </div>
+        </Html>
+      )}
+
       {/* Door */}
       <Door config={room.doors[0]} accentColor={room.accentColor} />
 
       {/* Ground plane for walking */}
-      {!houseEditMode && <GroundPlane />}
+      {(!houseEditMode || !isOwnerHouse) && <GroundPlane />}
     </>
   )
 }

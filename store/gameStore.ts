@@ -74,11 +74,17 @@ export interface GameState {
 
   // House
   houseItems: PlacedFurniture[]
+  visitedHouseItems: PlacedFurniture[]
   houseEditMode: boolean
+  houseOwnerId: string | null
+  houseOwnerName: string | null
   addFurniture: (type: FurnitureId, x: number, z: number) => void
   removeFurniture: (id: string) => void
   rotateFurniture: (id: string) => void
   setHouseEditMode: (enabled: boolean) => void
+  setVisitedHouse: (ownerId: string | null, ownerName: string | null, items: PlacedFurniture[]) => void
+  visitHouse: (ownerId: string, ownerName: string) => void
+  enterOwnHouse: () => void
 
   // World
   currentRoom: RoomId
@@ -140,7 +146,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   dailyBonusPending: 0,
   onlineRewardPending: 0,
   houseItems: [],
+  visitedHouseItems: [],
   houseEditMode: false,
+  houseOwnerId: null,
+  houseOwnerName: null,
   friends: [],
   githubUsername: '',
   githubLevel: 1,
@@ -207,6 +216,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       remotePlayers: {},
       gameStats: newStats,
       houseEditMode: false,
+      houseOwnerId: room === 'house' ? get().houseOwnerId : null,
+      houseOwnerName: room === 'house' ? get().houseOwnerName : null,
+      visitedHouseItems: room === 'house' ? get().visitedHouseItems : [],
     })
     get().checkAchievements()
   },
@@ -362,6 +374,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       githubLevel: githubData?.level ?? 1,
       githubContributions: githubData?.contributions ?? 0,
       houseItems: loadHouseItems(),
+      visitedHouseItems: [],
+      houseOwnerId: null,
+      houseOwnerName: null,
     })
 
     get().checkAchievements()
@@ -403,6 +418,63 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ houseItems: items })
   },
   setHouseEditMode: (enabled) => set({ houseEditMode: enabled }),
+  setVisitedHouse: (ownerId, ownerName, items) => set({
+    houseOwnerId: ownerId,
+    houseOwnerName: ownerName,
+    visitedHouseItems: items,
+  }),
+  visitHouse: (ownerId, ownerName) => set((state) => {
+    const roomsVisited = state.gameStats.roomsVisited.includes('house')
+      ? state.gameStats.roomsVisited
+      : [...state.gameStats.roomsVisited, 'house']
+    const newStats: GameStats = {
+      ...state.gameStats,
+      roomsVisited,
+      roomSwitches: state.gameStats.roomSwitches + 1,
+    }
+    saveStats(newStats)
+    return {
+      currentRoom: 'house',
+      houseOwnerId: ownerId,
+      houseOwnerName: ownerName,
+      visitedHouseItems: [],
+      houseEditMode: false,
+      playerX: 0,
+      playerZ: 0,
+      playerTargetX: 0,
+      playerTargetZ: 0,
+      playerChat: null,
+      playerEmote: null,
+      remotePlayers: {},
+      gameStats: newStats,
+    }
+  }),
+  enterOwnHouse: () => set((state) => {
+    const roomsVisited = state.gameStats.roomsVisited.includes('house')
+      ? state.gameStats.roomsVisited
+      : [...state.gameStats.roomsVisited, 'house']
+    const newStats: GameStats = {
+      ...state.gameStats,
+      roomsVisited,
+      roomSwitches: state.gameStats.roomSwitches + 1,
+    }
+    saveStats(newStats)
+    return {
+      currentRoom: 'house',
+      houseOwnerId: null,
+      houseOwnerName: null,
+      visitedHouseItems: [],
+      houseEditMode: false,
+      playerX: 0,
+      playerZ: 0,
+      playerTargetX: 0,
+      playerTargetZ: 0,
+      playerChat: null,
+      playerEmote: null,
+      remotePlayers: {},
+      gameStats: newStats,
+    }
+  }),
 
   // ── GitHub level ────────────────────────────────────────────────────
   setGithubLevel: (username, level, contributions) => {

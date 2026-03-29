@@ -1,8 +1,10 @@
 import type { RoomId } from '@/lib/roomConfig'
+import type { PlacedFurniture } from '@/lib/furniture'
 import type { RemotePlayer } from '@/store/gameStore'
 
 const CLIENT_ID_KEY = 'vibeland-realtime-client-id'
 const ROOM_CHANNEL_PREFIX = 'vibeland:room:'
+const HOUSE_CHANNEL_PREFIX = 'vibeland:house:'
 
 type PresencePlayerData = {
   name?: unknown
@@ -14,6 +16,12 @@ type PresencePlayerData = {
   x?: unknown
   z?: unknown
   room?: unknown
+}
+
+type HousePresenceData = {
+  ownerId?: unknown
+  ownerName?: unknown
+  items?: unknown
 }
 
 export function getRealtimeClientId() {
@@ -31,8 +39,16 @@ export function sanitizeClientId(value: string) {
   return value.replace(/[^a-zA-Z0-9:_-]/g, '').slice(0, 80)
 }
 
-export function getRealtimeRoomChannel(room: RoomId) {
+export function getRealtimeRoomChannel(room: RoomId, houseOwnerId?: string | null) {
+  if (room === 'house') {
+    const ownerId = houseOwnerId ? sanitizeClientId(houseOwnerId) : 'self'
+    return `${ROOM_CHANNEL_PREFIX}${room}:${ownerId}`
+  }
   return `${ROOM_CHANNEL_PREFIX}${room}`
+}
+
+export function getRealtimeHouseChannel(ownerId: string) {
+  return `${HOUSE_CHANNEL_PREFIX}${sanitizeClientId(ownerId)}`
 }
 
 export function buildPresencePlayerData(input: {
@@ -82,5 +98,55 @@ export function presenceDataToRemotePlayer(clientId: string, data: PresencePlaye
     chatTimer: 0,
     emote: null,
     emoteTimer: 0,
+  }
+}
+
+export function buildHousePresenceData(input: {
+  ownerId: string
+  ownerName: string
+  items: PlacedFurniture[]
+}) {
+  return {
+    ownerId: sanitizeClientId(input.ownerId),
+    ownerName: input.ownerName.trim().slice(0, 24) || 'Anon',
+    items: input.items,
+  }
+}
+
+export function presenceDataToHouseState(data: HousePresenceData): {
+  ownerId: string
+  ownerName: string
+  items: PlacedFurniture[]
+} | null {
+  if (typeof data.ownerId !== 'string' || !data.ownerId) return null
+
+  const items = Array.isArray(data.items)
+    ? data.items.flatMap((item): PlacedFurniture[] => {
+        if (!item || typeof item !== 'object') return []
+        const candidate = item as Record<string, unknown>
+        if (
+          typeof candidate.id !== 'string' ||
+          typeof candidate.type !== 'string' ||
+          typeof candidate.x !== 'number' ||
+          typeof candidate.z !== 'number' ||
+          typeof candidate.rotation !== 'number'
+        ) return []
+
+        return [{
+          id: candidate.id,
+          type: candidate.type as PlacedFurniture['type'],
+          x: candidate.x,
+          z: candidate.z,
+          rotation: candidate.rotation,
+        }]
+      })
+    : []
+
+  return {
+    ownerId: sanitizeClientId(data.ownerId),
+    ownerName: typeof data.ownerName === 'string' && data.ownerName.trim()
+      ? data.ownerName.trim().slice(0, 24)
+      : 'Anon',
+    items,
   }
 }

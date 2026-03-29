@@ -9,7 +9,7 @@ interface Props {
 export default function FriendsModal({ onClose }: Props) {
   const friends = useGameStore((s) => s.friends)
   const remotePlayers = useGameStore((s) => s.remotePlayers)
-  const changeRoom = useGameStore((s) => s.changeRoom)
+  const visitHouse = useGameStore((s) => s.visitHouse)
   const removeFriend = useGameStore((s) => s.removeFriend)
 
   const entries = friends
@@ -17,9 +17,9 @@ export default function FriendsModal({ onClose }: Props) {
     .sort((a, b) => Number(Boolean(b.remote)) - Number(Boolean(a.remote)))
 
   function handleVisit(friendId: string) {
-    const remote = remotePlayers[friendId]
-    if (!remote) return
-    changeRoom(remote.room)
+    const friend = friends.find((entry) => entry.id === friendId)
+    if (!friend || !remotePlayers[friendId]) return
+    visitHouse(friend.id, friend.name)
     onClose()
   }
 
