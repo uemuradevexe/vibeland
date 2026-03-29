@@ -3,12 +3,14 @@ import { ROOMS, type RoomId } from '@/lib/roomConfig'
 import { resolvePosition } from '@/lib/collision'
 import type { HatId, VehicleId } from '@/lib/skins'
 import type { AvatarId } from '@/lib/avatars'
+import type { FurnitureId, PlacedFurniture } from '@/lib/furniture'
 import {
   loadTokens, saveTokens, claimDailyBonus,
   loadEquipped, saveEquipped,
   loadInventory, saveInventory,
 } from '@/lib/tokenStore'
 import { loadFriends, saveFriends, type Friend } from '@/lib/friends'
+import { loadHouse, saveHouse } from '@/lib/houseStore'
 import {
   ACHIEVEMENTS,
   loadAchievements, saveAchievements,
@@ -19,6 +21,31 @@ import {
   type GameStats,
 } from '@/lib/achievements'
 import { loadGithubLevel, saveGithubLevel } from '@/lib/githubLevel'
+
+function createRoomTransition(room: RoomId, gameStats: GameStats, extra?: Partial<GameState>) {
+  const roomsVisited = gameStats.roomsVisited.includes(room)
+    ? gameStats.roomsVisited
+    : [...gameStats.roomsVisited, room]
+  const newStats: GameStats = {
+    ...gameStats,
+    roomsVisited,
+    roomSwitches: gameStats.roomSwitches + 1,
+  }
+
+  return {
+    currentRoom: room,
+    playerX: 0,
+    playerZ: 0,
+    playerTargetX: 0,
+    playerTargetZ: 0,
+    npcs: [],
+    playerChat: null,
+    playerEmote: null,
+    remotePlayers: {},
+    gameStats: newStats,
+    ...extra,
+  }
+}
 
 export interface NPC {
   id: string
@@ -43,6 +70,7 @@ export interface RemotePlayer {
   x: number
   z: number
   room: RoomId
+  houseOwnerId?: string | null
   chat: string | null
   chatTimer: number
   emote: string | null
@@ -61,6 +89,7 @@ export interface GameState {
   playerChatTimer: number
   playerEmote: string | null
   playerEmoteTimer: number
+  localPlayerId: string
 
   // Cosmetics
   playerHat: HatId
@@ -71,6 +100,10 @@ export interface GameState {
   dailyBonusPending: number
   onlineRewardPending: number
   friends: Friend[]
+  houseItems: PlacedFurniture[]
+  visitedHouseItems: Record<string, PlacedFurniture[]>
+  viewingHouseOwnerId: string | null
+  houseEditMode: boolean
 
   // GitHub level
   githubUsername: string
@@ -93,9 +126,12 @@ export interface GameState {
   setPlayer: (name: string, color: string) => void
   setPlayerColor: (color: string) => void
   setPlayerTarget: (x: number, z: number) => void
+  setLocalPlayerId: (id: string) => void
   sendChat: (message: string) => void
   sendEmote: (emote: string) => void
   changeRoom: (room: RoomId) => void
+  enterOwnHouse: () => void
+  visitHouse: (ownerId: string) => void
   setNPCs: (npcs: NPC[]) => void
   tickGame: (delta: number) => void
 
@@ -103,6 +139,7 @@ export interface GameState {
   setRemotePlayers: (players: RemotePlayer[]) => void
   upsertRemotePlayer: (partial: Partial<RemotePlayer> & { id: string }) => void
   removeRemotePlayer: (id: string) => void
+  setVisitedHouseItems: (ownerId: string, items: PlacedFurniture[]) => void
 
   // Skins & tokens
   equipHat: (hat: HatId) => void
@@ -114,6 +151,10 @@ export interface GameState {
   dismissOnlineReward: () => void
   addFriend: (friend: Friend) => void
   removeFriend: (id: string) => void
+  setHouseEditMode: (value: boolean) => void
+  addFurniture: (type: FurnitureId, x: number, z: number) => void
+  removeFurniture: (id: string) => void
+  rotateFurniture: (id: string) => void
 
   // GitHub level
   setGithubLevel: (username: string, level: number, contributions: number) => void
@@ -135,6 +176,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   playerChatTimer: 0,
   playerEmote: null,
   playerEmoteTimer: 0,
+  localPlayerId: '',
   playerHat: 'none',
   playerVehicle: 'none',
   playerAvatar: 'default',
@@ -143,6 +185,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   dailyBonusPending: 0,
   onlineRewardPending: 0,
   friends: [],
+  houseItems: [],
+  visitedHouseItems: {},
+  viewingHouseOwnerId: null,
+  houseEditMode: false,
   githubUsername: '',
   githubLevel: 1,
   githubContributions: 0,
@@ -165,6 +211,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   setPlayer: (name, color) => set({ playerName: name, playerColor: color }),
   setPlayerColor: (color) => set({ playerColor: color }),
   setPlayerTarget: (x, z) => set({ playerTargetX: x, playerTargetZ: z }),
+  setLocalPlayerId: (id) => set({ localPlayerId: id }),
 
   sendChat: (message) => {
     const { gameStats } = get()
@@ -188,27 +235,34 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   changeRoom: (room) => {
     const { gameStats } = get()
-    const roomsVisited = gameStats.roomsVisited.includes(room)
-      ? gameStats.roomsVisited
-      : [...gameStats.roomsVisited, room]
-    const newStats: GameStats = {
-      ...gameStats,
-      roomsVisited,
-      roomSwitches: gameStats.roomSwitches + 1,
-    }
-    saveStats(newStats)
-    set({
-      currentRoom: room,
-      playerX: 0,
-      playerZ: 0,
-      playerTargetX: 0,
-      playerTargetZ: 0,
-      npcs: [],
-      playerChat: null,
-      playerEmote: null,
-      remotePlayers: {},
-      gameStats: newStats,
+    const next = createRoomTransition(room, gameStats, {
+      viewingHouseOwnerId: room === 'house' ? null : null,
+      houseEditMode: false,
     })
+    saveStats(next.gameStats)
+    set(next)
+    get().checkAchievements()
+  },
+
+  enterOwnHouse: () => {
+    const { gameStats } = get()
+    const next = createRoomTransition('house', gameStats, {
+      viewingHouseOwnerId: null,
+      houseEditMode: false,
+    })
+    saveStats(next.gameStats)
+    set(next)
+    get().checkAchievements()
+  },
+
+  visitHouse: (ownerId) => {
+    const { gameStats } = get()
+    const next = createRoomTransition('house', gameStats, {
+      viewingHouseOwnerId: ownerId,
+      houseEditMode: false,
+    })
+    saveStats(next.gameStats)
+    set(next)
     get().checkAchievements()
   },
 
@@ -229,7 +283,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const existing = state.remotePlayers[partial.id] ?? {
       id: partial.id, name: '?', color: '#888', hat: 'none', vehicle: 'none',
       avatar: 'default', level: 1,
-      x: 0, z: 0, room: state.currentRoom, chat: null, chatTimer: 0, emote: null, emoteTimer: 0,
+      x: 0, z: 0, room: state.currentRoom, houseOwnerId: null, chat: null, chatTimer: 0, emote: null, emoteTimer: 0,
     } as RemotePlayer
     const updated: RemotePlayer = {
       ...existing,
@@ -245,6 +299,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     delete next[id]
     return { remotePlayers: next }
   }),
+
+  setVisitedHouseItems: (ownerId, items) => set((state) => ({
+    visitedHouseItems: { ...state.visitedHouseItems, [ownerId]: items },
+  })),
 
   tickGame: (delta) => set((state) => {
     const colliders = ROOMS[state.currentRoom].colliders
@@ -369,6 +427,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const equipped = loadEquipped()
     const inventory = loadInventory()
     const friends = loadFriends()
+    const houseItems = loadHouse()
     const achievements = loadAchievements()
     const gameStats = loadStats()
 
@@ -393,6 +452,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       playerVehicle: equipped.vehicle as VehicleId,
       inventory,
       friends,
+      houseItems,
       achievements,
       gameStats: newStats,
       githubUsername: githubData?.username ?? '',
@@ -418,6 +478,39 @@ export const useGameStore = create<GameState>((set, get) => ({
     const friends = state.friends.filter((friend) => friend.id !== id)
     saveFriends(friends)
     return { friends }
+  }),
+
+  setHouseEditMode: (value) => set({ houseEditMode: value }),
+
+  addFurniture: (type, x, z) => set((state) => {
+    const houseItems = [
+      ...state.houseItems,
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        type,
+        x: Math.max(-14.5, Math.min(14.5, x)),
+        z: Math.max(-14.5, Math.min(14.5, z)),
+        rotation: 0,
+      },
+    ]
+    saveHouse(houseItems)
+    return { houseItems }
+  }),
+
+  removeFurniture: (id) => set((state) => {
+    const houseItems = state.houseItems.filter((item) => item.id !== id)
+    saveHouse(houseItems)
+    return { houseItems }
+  }),
+
+  rotateFurniture: (id) => set((state) => {
+    const houseItems = state.houseItems.map((item) =>
+      item.id === id
+        ? { ...item, rotation: item.rotation + Math.PI / 2 }
+        : item
+    )
+    saveHouse(houseItems)
+    return { houseItems }
   }),
 
   // ── GitHub level ────────────────────────────────────────────────────

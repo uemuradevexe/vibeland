@@ -44,6 +44,13 @@ export const NPC_PHRASES: Record<RoomId, string[]> = {
     'Natureza + tokens = perfeição 🌿',
     'Treino ao ar livre é o melhor! 🌞',
   ],
+  house: [
+    'Lar doce prompt 🏠',
+    'Organizando meus móveis em tokens.',
+    'Essa sala ficou com ótimo contexto.',
+    'Modo decoração ativado ✨',
+    'Casa nova, vibes novas.',
+  ],
 }
 
 export function getRandomPhrase(roomId: RoomId): string {
