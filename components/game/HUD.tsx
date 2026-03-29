@@ -62,6 +62,10 @@ export default function HUD() {
   const dismissAchievement  = useGameStore((s) => s.dismissAchievement)
   const houseEditMode       = useGameStore((s) => s.houseEditMode)
   const setHouseEditMode    = useGameStore((s) => s.setHouseEditMode)
+  const houseOwnerId        = useGameStore((s) => s.houseOwnerId)
+  const houseOwnerName      = useGameStore((s) => s.houseOwnerName)
+  const enterOwnHouse       = useGameStore((s) => s.enterOwnHouse)
+  const isVisitingHouse     = currentRoom === 'house' && Boolean(houseOwnerId)
 
   // Cleanup chat cooldown timer on unmount
   useEffect(() => {
@@ -171,7 +175,7 @@ export default function HUD() {
           onClick={() => setShowProfile(true)}
           className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-5 py-1.5 font-mono text-sm text-[#7a9cc8] backdrop-blur-sm hover:border-[#3d6db5] transition-colors"
         >
-          {ROOMS[currentRoom].emoji} {ROOMS[currentRoom].name}
+          {ROOMS[currentRoom].emoji} {isVisitingHouse ? `Casa de ${houseOwnerName ?? 'Amigo'}` : ROOMS[currentRoom].name}
           <span className="ml-3 text-[#3d6db5]">·</span>
           <span className="ml-3 text-[#5a7aa8] text-xs">{playerName}</span>
           <span className="ml-3 text-[#3d6db5]">·</span>
@@ -262,6 +266,9 @@ export default function HUD() {
 
       {/* Achievements modal */}
       {showAchievements && <AchievementsModal onClose={() => setShowAchievements(false)} />}
+
+      {/* Friends modal */}
+      {showFriends && <FriendsModal onClose={() => setShowFriends(false)} />}
 
       {/* Furniture shop modal */}
       {showFurnitureShop && <FurnitureShopModal onClose={() => setShowFurnitureShop(false)} />}
@@ -447,7 +454,7 @@ export default function HUD() {
 
         {/* House button — go to my house */}
         <button
-          onClick={() => changeRoom('house')}
+          onClick={enterOwnHouse}
           className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-2.5 sm:p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label="Minha casa"
           title="Minha Casa"
@@ -456,7 +463,7 @@ export default function HUD() {
         </button>
 
         {/* House edit mode — house only */}
-        {currentRoom === 'house' ? (
+        {currentRoom === 'house' && !isVisitingHouse ? (
           <>
             <button
               onClick={() => setHouseEditMode(!houseEditMode)}

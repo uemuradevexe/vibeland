@@ -4,9 +4,12 @@ import { useEffect, useRef } from 'react'
 import * as Ably from 'ably'
 import { useGameStore } from '@/store/gameStore'
 import {
+  buildHousePresenceData,
   buildPresencePlayerData,
   getRealtimeClientId,
+  getRealtimeHouseChannel,
   getRealtimeRoomChannel,
+  presenceDataToHouseState,
   presenceDataToRemotePlayer,
 } from '@/lib/realtime'
 
@@ -16,6 +19,8 @@ const MOVE_THRESHOLD = 0.01 // skip tiny position changes
 export function useMultiplayer() {
   const realtimeRef = useRef<Ably.Realtime | null>(null)
   const channelRef = useRef<Ably.RealtimeChannel | null>(null)
+  const ownHouseChannelRef = useRef<Ably.RealtimeChannel | null>(null)
+  const visitingHouseChannelRef = useRef<Ably.RealtimeChannel | null>(null)
   const roomRef = useRef<string | null>(null)
   const joinTokenRef = useRef(0)
 
@@ -40,6 +45,15 @@ export function useMultiplayer() {
         x: state.playerX,
         z: state.playerZ,
         room: state.currentRoom,
+      })
+    }
+
+    const buildOwnHousePresence = () => {
+      const state = useGameStore.getState()
+      return buildHousePresenceData({
+        ownerId: clientId,
+        ownerName: state.playerName || 'Anon',
+        items: state.houseItems,
       })
     }
 
@@ -101,6 +115,35 @@ export function useMultiplayer() {
       }
     }
 
+    const syncVisitedHouse = async (channel: Ably.RealtimeChannel, ownerId: string) => {
+      const members = await channel.presence.get()
+      const ownerState = members
+        .filter((member) => member.clientId === ownerId)
+        .map((member) => presenceDataToHouseState(member.data ?? {}))
+        .find((value): value is NonNullable<typeof value> => value !== null)
+
+      useGameStore.getState().setVisitedHouse(
+        ownerId,
+        ownerState?.ownerName ?? null,
+        ownerState?.items ?? [],
+      )
+    }
+
+    const handleVisitedHousePresence = (message: Ably.PresenceMessage) => {
+      const store = useGameStore.getState()
+      const ownerId = store.houseOwnerId
+      if (!ownerId || message.clientId !== ownerId) return
+
+      if (message.action === 'leave') {
+        store.setVisitedHouse(ownerId, store.houseOwnerName, [])
+        return
+      }
+
+      const ownerState = presenceDataToHouseState(message.data ?? {})
+      if (!ownerState) return
+      store.setVisitedHouse(ownerState.ownerId, ownerState.ownerName, ownerState.items)
+    }
+
     const leaveCurrentRoom = async () => {
       const current = channelRef.current
       if (!current) return
@@ -114,11 +157,32 @@ export function useMultiplayer() {
       roomRef.current = null
     }
 
+    const leaveVisitedHouse = async () => {
+      const channel = visitingHouseChannelRef.current
+      if (!channel) return
+
+      channel.presence.unsubscribe(handleVisitedHousePresence)
+      try { await channel.detach() } catch {}
+      visitingHouseChannelRef.current = null
+      useGameStore.getState().setVisitedHouse(null, null, [])
+    }
+
+    const joinVisitedHouse = async (ownerId: string) => {
+      await leaveVisitedHouse()
+
+      const channel = realtime.channels.get(getRealtimeHouseChannel(ownerId))
+      visitingHouseChannelRef.current = channel
+      await channel.presence.subscribe(handleVisitedHousePresence)
+      await syncVisitedHouse(channel, ownerId)
+    }
+
     const joinRoom = async (room: ReturnType<typeof useGameStore.getState>['currentRoom']) => {
       const joinToken = ++joinTokenRef.current
       await leaveCurrentRoom()
 
-      const channel = realtime.channels.get(getRealtimeRoomChannel(room))
+      const state = useGameStore.getState()
+      const houseScopeId = room === 'house' ? (state.houseOwnerId || clientId) : null
+      const channel = realtime.channels.get(getRealtimeRoomChannel(room, houseScopeId))
       channelRef.current = channel
       roomRef.current = room
 
@@ -146,6 +210,10 @@ export function useMultiplayer() {
       console.warn('[realtime] connection failed')
       useGameStore.setState({ wsConnected: false, remotePlayers: {} })
     })
+
+    const ownHouseChannel = realtime.channels.get(getRealtimeHouseChannel(clientId))
+    ownHouseChannelRef.current = ownHouseChannel
+    void ownHouseChannel.presence.enter(buildOwnHousePresence())
 
     // ── Throttled position broadcast (~20 Hz) ───────────────────────────
     let lastX = 0
@@ -176,8 +244,21 @@ export function useMultiplayer() {
       if (!channel) return
 
       if (state.currentRoom !== prev.currentRoom) {
+        if (state.currentRoom === 'house' && state.houseOwnerId) {
+          void joinVisitedHouse(state.houseOwnerId)
+        } else {
+          void leaveVisitedHouse()
+        }
         void joinRoom(state.currentRoom)
         return
+      }
+
+      if (state.houseOwnerId !== prev.houseOwnerId) {
+        if (state.currentRoom === 'house' && state.houseOwnerId) {
+          void joinVisitedHouse(state.houseOwnerId)
+        } else {
+          void leaveVisitedHouse()
+        }
       }
 
       if (state.playerChat && state.playerChat !== prev.playerChat) {
@@ -196,12 +277,21 @@ export function useMultiplayer() {
       ) {
         void channel.presence.update(buildSelfPresence())
       }
+
+      if (
+        state.playerName !== prev.playerName ||
+        state.houseItems !== prev.houseItems
+      ) {
+        void ownHouseChannel.presence.update(buildOwnHousePresence())
+      }
     })
 
     return () => {
       window.clearInterval(moveTimer)
       unsub()
       void leaveCurrentRoom()
+      void leaveVisitedHouse()
+      try { void ownHouseChannel.presence.leave() } catch {}
       realtime.close()
     }
   }, [])
