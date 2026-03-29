@@ -8,6 +8,7 @@ import {
   loadEquipped, saveEquipped,
   loadInventory, saveInventory,
 } from '@/lib/tokenStore'
+import { loadFriends, saveFriends, type Friend } from '@/lib/friends'
 import {
   ACHIEVEMENTS,
   loadAchievements, saveAchievements,
@@ -17,7 +18,7 @@ import {
   type AchievementsState,
   type GameStats,
 } from '@/lib/achievements'
-import { getLevel, loadGithubLevel, saveGithubLevel } from '@/lib/githubLevel'
+import { loadGithubLevel, saveGithubLevel } from '@/lib/githubLevel'
 
 export interface NPC {
   id: string
@@ -69,6 +70,7 @@ export interface GameState {
   inventory: string[]
   dailyBonusPending: number
   onlineRewardPending: number
+  friends: Friend[]
 
   // GitHub level
   githubUsername: string
@@ -111,6 +113,8 @@ export interface GameState {
   initPlayer: () => void
   dismissDailyBonus: () => void
   dismissOnlineReward: () => void
+  addFriend: (friend: Friend) => void
+  removeFriend: (id: string) => void
 
   // GitHub level
   setGithubLevel: (username: string, level: number, contributions: number) => void
@@ -139,6 +143,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   inventory: ['none'],
   dailyBonusPending: 0,
   onlineRewardPending: 0,
+  friends: [],
   githubUsername: '',
   githubLevel: 1,
   githubContributions: 0,
@@ -367,6 +372,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (bonus > 0) saveTokens(finalTokens)
     const equipped = loadEquipped()
     const inventory = loadInventory()
+    const friends = loadFriends()
     const achievements = loadAchievements()
     const gameStats = loadStats()
 
@@ -391,6 +397,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       playerVehicle: equipped.vehicle as VehicleId,
       playerAvatar:  equipped.avatar  as AvatarId,
       inventory,
+      friends,
       achievements,
       gameStats: newStats,
       githubUsername: githubData?.username ?? '',
@@ -403,6 +410,20 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   dismissDailyBonus: () => set({ dailyBonusPending: 0 }),
   dismissOnlineReward: () => set({ onlineRewardPending: 0 }),
+
+  addFriend: (friend) => set((state) => {
+    const friends = state.friends.some((entry) => entry.id === friend.id)
+      ? state.friends.map((entry) => entry.id === friend.id ? friend : entry)
+      : [...state.friends, friend]
+    saveFriends(friends)
+    return { friends }
+  }),
+
+  removeFriend: (id) => set((state) => {
+    const friends = state.friends.filter((friend) => friend.id !== id)
+    saveFriends(friends)
+    return { friends }
+  }),
 
   // ── GitHub level ────────────────────────────────────────────────────
   setGithubLevel: (username, level, contributions) => {
