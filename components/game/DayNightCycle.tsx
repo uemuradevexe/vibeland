@@ -36,6 +36,9 @@ const PARSED_KEYFRAMES = KEYFRAMES.map((kf) => ({
 const _ambientColor = new THREE.Color()
 const _dirColor     = new THREE.Color()
 
+// Shared phase ref — other components can read the current cycle position (0–1)
+export const cyclePhaseRef = { current: 0 }
+
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t
 }
@@ -50,6 +53,7 @@ export default function DayNightCycle() {
 
     elapsed.current = (elapsed.current + delta) % CYCLE_DURATION
     const phase = elapsed.current / CYCLE_DURATION
+    cyclePhaseRef.current = phase
 
     // Find surrounding keyframes
     let prev = PARSED_KEYFRAMES[PARSED_KEYFRAMES.length - 2]

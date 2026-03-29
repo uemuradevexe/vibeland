@@ -123,3 +123,40 @@ Four more bugs fixed after reading `Room.tsx`, `BeachMinigame.tsx`, `GameCanvas.
 - BeachMinigame stale token read in `claimReward` (#85)
 - CameraRig + DayNightCycle per-frame Three.js allocations (#86)
 - GitHub API returns silent 200 for non-existent users (#87)
+
+---
+
+## 2026-03-29 — Round 4 — Branch: `fix/issues-63-70` (continued)
+
+### Summary
+Five more bugs fixed across ProfileModal, Door, GitHub API, and PlazaRoom night sky.
+
+### Changes
+
+#### `components/ui/ProfileModal.tsx`
+- **Added `playerAvatar` and `githubLevel` subscriptions** from the Zustand store.
+- **Fixed level display** — replaced `Math.floor(tokens/100)+1` (token-based, inconsistent) with `githubLevel` (the canonical GitHub contribution level used everywhere else in the game). (closes #88)
+- **Avatar now shown in profile preview** — the orb preview circle shows `avatarDef.emoji` when a non-default avatar is equipped, falling back to the hat emoji for default avatar. (closes #89)
+- **Added Avatar column to the "Equipped" section** — previously only hat and vehicle were shown.
+- **Added `ownedAvatars` to inventory summary** — avatars in the player's inventory are now displayed alongside hats and vehicles. (closes #89)
+- Removed unused `level` variable.
+
+#### `components/game/Door.tsx`
+- **Added `dragStateRef` guard** — imported `dragStateRef` from `GameCanvas` and added `!dragStateRef.current.didDrag` check before calling `changeRoom`. Prevents a camera drag-end over a door from triggering an unintended room change. (closes #90)
+
+#### `app/api/github/route.ts`
+- **Added `GITHUB_TOKEN` auth header** — mirrors the pattern already used in `app/api/github/contributions/route.ts`. Unauthenticated GitHub REST API calls are limited to 60 req/h per IP; with a token the limit is 5000 req/h. (closes #91)
+
+#### `components/game/DayNightCycle.tsx`
+- **Exported `cyclePhaseRef`** — a module-level `{ current: 0 }` ref updated every frame with the current cycle phase (0–1). Allows other Three.js components to read the time of day without store overhead.
+
+#### `components/rooms/PlazaRoom.tsx`
+- **Extracted moon and stars into `<NightSky />`** — a sub-component that uses `useFrame` to set `group.visible = phase < 0.15 || phase > 0.65`. Moon and stars are now hidden during morning through afternoon, matching the day/night cycle. (closes #92)
+- Added imports: `useRef`, `useFrame`, `THREE`, `cyclePhaseRef`.
+
+### Issues addressed (fourth round — #88–#92)
+- ProfileModal shows wrong level (token-based vs GitHub level) (#88)
+- ProfileModal missing avatar display and avatar inventory (#89)
+- Door.tsx drag-end triggers room change (#90)
+- GitHub profile API unauthenticated → rate-limited at 60 req/h (#91)
+- PlazaRoom moon/stars always visible regardless of day/night cycle (#92)
