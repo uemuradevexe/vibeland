@@ -141,6 +141,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   onlineRewardPending: 0,
   houseItems: [],
   houseEditMode: false,
+  friends: [],
   githubUsername: '',
   githubLevel: 1,
   githubContributions: 0,

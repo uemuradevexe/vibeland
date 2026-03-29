@@ -38,9 +38,7 @@ export default function HUD() {
   const [githubLoading, setGithubLoading] = useState(false)
   const [githubError, setGithubError] = useState<string | null>(null)
   const [showAchievementToast, setShowAchievementToast] = useState(false)
-  const [showOnlineToast, setShowOnlineToast] = useState(false)
   const [muted, setMuted] = useState(isMuted)
-  const [chatCooldown, setChatCooldown] = useState(false)
   const cooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const sendChat    = useGameStore((s) => s.sendChat)
@@ -64,11 +62,6 @@ export default function HUD() {
   const dismissAchievement  = useGameStore((s) => s.dismissAchievement)
   const houseEditMode       = useGameStore((s) => s.houseEditMode)
   const setHouseEditMode    = useGameStore((s) => s.setHouseEditMode)
-
-  // Cleanup chat cooldown timer on unmount
-  useEffect(() => {
-    return () => { if (cooldownRef.current) clearTimeout(cooldownRef.current) }
-  }, [])
 
   // Cleanup chat cooldown timer on unmount
   useEffect(() => {
