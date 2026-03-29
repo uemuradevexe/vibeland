@@ -33,7 +33,9 @@ export default function HUD() {
   const [githubError, setGithubError] = useState<string | null>(null)
   const [showAchievementToast, setShowAchievementToast] = useState(false)
   const [showOnlineToast, setShowOnlineToast] = useState(false)
-  const [muted, setMuted] = useState(false)
+  const [muted, setMuted] = useState(isMuted)
+  const [chatCooldown, setChatCooldown] = useState(false)
+  const cooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const sendChat    = useGameStore((s) => s.sendChat)
   const sendEmote   = useGameStore((s) => s.sendEmote)
@@ -54,6 +56,11 @@ export default function HUD() {
   const setGithubLevel      = useGameStore((s) => s.setGithubLevel)
   const pendingAchievement  = useGameStore((s) => s.pendingAchievement)
   const dismissAchievement  = useGameStore((s) => s.dismissAchievement)
+
+  // Cleanup chat cooldown timer on unmount
+  useEffect(() => {
+    return () => { if (cooldownRef.current) clearTimeout(cooldownRef.current) }
+  }, [])
 
   // Daily bonus toast
   useEffect(() => {
@@ -108,14 +115,15 @@ export default function HUD() {
     setGithubError(null)
     try {
       const res = await fetch(`/api/github/contributions?username=${encodeURIComponent(username)}`)
+      if (res.status === 404) throw new Error('GitHub user not found')
       if (!res.ok) throw new Error('Failed to fetch')
       const data = await res.json()
       const contributions = data.contributions ?? 0
       const level = getLevel(contributions)
       setGithubLevel(username, level, contributions)
       setShowGithubModal(false)
-    } catch {
-      setGithubError('Could not fetch GitHub data')
+    } catch (e) {
+      setGithubError(e instanceof Error ? e.message : 'Could not fetch GitHub data')
     } finally {
       setGithubLoading(false)
     }

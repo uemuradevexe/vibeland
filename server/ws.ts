@@ -4,6 +4,19 @@ import { IncomingMessage } from 'http'
 
 type RoomId = 'plaza' | 'cafe' | 'beach' | 'library' | 'arcade' | 'garden'
 
+const VALID_ROOMS = new Set<RoomId>(['plaza', 'cafe', 'beach', 'library', 'arcade', 'garden'])
+const POSITION_BOUND = 17   // matches client KeyboardInput ±17 limit
+
+function validRoom(v: unknown): RoomId {
+  return VALID_ROOMS.has(v as RoomId) ? (v as RoomId) : 'plaza'
+}
+
+function clampPos(v: unknown): number {
+  const n = Number(v)
+  if (!isFinite(n)) return 0
+  return Math.max(-POSITION_BOUND, Math.min(POSITION_BOUND, n))
+}
+
 interface PlayerState {
   id: string
   name: string
@@ -68,10 +81,12 @@ function checkRateLimit(state: RateLimitState): boolean {
   return state.messageCount <= MAX_MESSAGES_PER_SEC
 }
 
-function getClientIp(req: IncomingMessage): string {
-  const forwarded = req.headers['x-forwarded-for']
-  if (typeof forwarded === 'string') return forwarded.split(',')[0].trim()
-  return req.socket.remoteAddress ?? 'unknown'
+function validHat(v: unknown)     { return VALID_HATS.has(String(v))     ? String(v) : 'none' }
+function validVehicle(v: unknown) { return VALID_VEHICLES.has(String(v)) ? String(v) : 'none' }
+function validAvatar(v: unknown)  { return VALID_AVATARS.has(String(v))  ? String(v) : 'default' }
+function validColor(v: unknown)   {
+  const s = String(v ?? '').trim()
+  return /^#[0-9a-fA-F]{6}$/.test(s) ? s : '#ea580c'
 }
 
 // ── Server setup ─────────────────────────────────────────────────────────────
@@ -142,7 +157,7 @@ wss.on('connection', (ws, req) => {
     if (msg.type === 'join') {
       const state: PlayerState = {
         id,
-        name:    String(msg.name  || 'Anon').replace(/[<>&"']/g, '').slice(0, 24),
+        name:    (String(msg.name  || '').trim().slice(0, 24)) || 'Anon',
         color:   validColor(msg.color),
         hat:     validHat(msg.hat),
         vehicle: validVehicle(msg.vehicle),
@@ -174,7 +189,7 @@ wss.on('connection', (ws, req) => {
 
       // ── chat ────────────────────────────────────────────────────────────
       case 'chat': {
-        const message = sanitizeChat(msg.message)
+        const message = String(msg.message || '').trim().slice(0, 120)
         if (!message) break
         player.chat = message
         broadcastToRoom(player.room, { type: 'player_chat', id, message }, ws)
@@ -183,8 +198,7 @@ wss.on('connection', (ws, req) => {
 
       // ── emote ───────────────────────────────────────────────────────────
       case 'emote': {
-        const emote = validEmote(msg.emote)
-        if (!emote) break
+        const emote = String(msg.emote || '').slice(0, 12)
         player.emote = emote
         broadcastToRoom(player.room, { type: 'player_emote', id, emote }, ws)
         break

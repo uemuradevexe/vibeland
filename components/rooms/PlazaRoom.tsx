@@ -1,10 +1,14 @@
 'use client'
 
+import { useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
 import { ROOMS } from '@/lib/roomConfig'
 import Door from '@/components/game/Door'
 import GroundPlane from '@/components/game/GroundPlane'
 import AdsBillboard from '@/components/game/AdsBillboard'
 import SittableObject from '@/components/game/SittableObject'
+import { cyclePhaseRef } from '@/components/game/DayNightCycle'
 
 const room = ROOMS.plaza
 
@@ -21,6 +25,32 @@ const BUILDINGS: [number, number, number, number, string][] = [
   [-8,  -16, 3, 5, '#1a2d56'], [8,   -16, 4, 7, '#0f1e3d'],
   [-8,   16, 4, 4, '#162245'], [8,    16, 3, 6, '#243560'],
 ]
+
+// Night is active outside the day window (morning 0.15 → afternoon end 0.65)
+function NightSky() {
+  const groupRef = useRef<THREE.Group>(null)
+  useFrame(() => {
+    if (!groupRef.current) return
+    const p = cyclePhaseRef.current
+    groupRef.current.visible = p < 0.15 || p > 0.65
+  })
+  return (
+    <group ref={groupRef}>
+      {/* Moon */}
+      <mesh position={[-22, 18, -22]}>
+        <sphereGeometry args={[1.4, 16, 16]} />
+        <meshStandardMaterial color="#f0e6c8" emissive="#f0e6c8" emissiveIntensity={0.5} toneMapped={false} />
+      </mesh>
+      {/* Stars */}
+      {Array.from({ length: 50 }).map((_, i) => (
+        <mesh key={i} position={[Math.sin(i * 2.3) * 28, 12 + Math.cos(i * 1.7) * 4, Math.cos(i * 1.1 + 1) * 28]}>
+          <sphereGeometry args={[0.06, 4, 4]} />
+          <meshStandardMaterial color="#c8d8f0" emissive="#c8d8f0" emissiveIntensity={1} toneMapped={false} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
 
 export default function PlazaRoom() {
   return (
@@ -168,17 +198,8 @@ export default function PlazaRoom() {
         </group>
       ))}
 
-      {/* Moon + stars */}
-      <mesh position={[-22, 18, -22]}>
-        <sphereGeometry args={[1.4, 16, 16]} />
-        <meshStandardMaterial color="#f0e6c8" emissive="#f0e6c8" emissiveIntensity={0.5} toneMapped={false} />
-      </mesh>
-      {Array.from({ length: 50 }).map((_, i) => (
-        <mesh key={i} position={[Math.sin(i * 2.3) * 28, 12 + Math.cos(i * 1.7) * 4, Math.cos(i * 1.1 + 1) * 28]}>
-          <sphereGeometry args={[0.06, 4, 4]} />
-          <meshStandardMaterial color="#c8d8f0" emissive="#c8d8f0" emissiveIntensity={1} toneMapped={false} />
-        </mesh>
-      ))}
+      {/* Moon + stars — only visible at night/dawn/dusk */}
+      <NightSky />
 
       {/* Ads billboards */}
       <AdsBillboard position={[-18, 0, -5]} rotateSpeed={0} />
