@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
@@ -20,9 +20,6 @@ interface ClaudeOrbProps {
   vehicle?: VehicleId
   avatar?: AvatarId
   level?: number
-  isFriend?: boolean
-  onAddFriend?: () => void
-  onRemoveFriend?: () => void
 }
 
 function darkenHex(hex: string, amount = 0.62): string {
@@ -33,11 +30,18 @@ function darkenHex(hex: string, amount = 0.62): string {
   return `#${d(r)}${d(g)}${d(b)}`
 }
 
+function seededPhase(input: string, offset = 0) {
+  let hash = 0
+  for (let i = 0; i < input.length; i++) {
+    hash = (hash * 31 + input.charCodeAt(i) + offset) >>> 0
+  }
+  return (hash % 6283) / 1000
+}
+
 export default function ClaudeOrb({
   x, z = 0, color, name, chat, emote,
   isPlayer, hat = 'none', vehicle = 'none',
   avatar = 'default', level = 1,
-  isFriend = false, onAddFriend, onRemoveFriend,
 }: ClaudeOrbProps) {
   const avatarDef  = AVATARS[avatar] ?? AVATARS.default
   const hatDef     = HATS[hat]     ?? HATS.none
@@ -50,28 +54,26 @@ export default function ClaudeOrb({
   const floatRef     = useRef<THREE.Group>(null)
   const leftArmRef   = useRef<THREE.Mesh>(null)
   const rightArmRef  = useRef<THREE.Mesh>(null)
+  const leftLegRef   = useRef<THREE.Mesh>(null)
+  const rightLegRef  = useRef<THREE.Mesh>(null)
   const auraRingRef  = useRef<THREE.Mesh>(null)
   const auraRing2Ref = useRef<THREE.Mesh>(null)
   const auraGroupRef = useRef<THREE.Group>(null)
 
   const prevPos    = useRef({ x, z })
   const targetRotY = useRef(0)
-  const walkPhase  = useRef(0)
-  const idlePhase  = useRef(0)
-  const [showFriendAction, setShowFriendAction] = useState(false)
 
   const limbColor = darkenHex(color)
   const scale = isPlayer ? 1.1 : 1.0
-  const headTop = avatarDef.headTopY
+  const headTop = avatarDef.pieces.length > 0 ? avatarDef.headTopY : 2.0
   const isDefault = avatar === 'default' || avatarDef.pieces.length === 0
-  const hasFriendAction = !isPlayer && (Boolean(onAddFriend) || Boolean(onRemoveFriend))
+  const phaseKey = `${name}:${color}:${avatar}`
+  const initialWalkPhase = useMemo(() => seededPhase(phaseKey, 17), [phaseKey])
+  const initialIdlePhase = useMemo(() => seededPhase(phaseKey, 53), [phaseKey])
+  const walkPhase  = useRef(initialWalkPhase)
+  const idlePhase  = useRef(initialIdlePhase)
 
   const levelColor = LEVEL_COLORS[clampedLevel] ?? '#9E9E9E'
-
-  useEffect(() => {
-    walkPhase.current = Math.random() * Math.PI * 2
-    idlePhase.current = Math.random() * Math.PI * 2
-  }, [])
 
   useFrame((_, delta) => {
     if (!bodyRef.current || !floatRef.current) return
@@ -85,6 +87,8 @@ export default function ClaudeOrb({
       walkPhase.current += delta * 7
       const swing = Math.sin(walkPhase.current)
       if (isDefault) {
+        if (leftLegRef.current)  leftLegRef.current.rotation.x  =  swing * 0.6
+        if (rightLegRef.current) rightLegRef.current.rotation.x = -swing * 0.6
         if (leftArmRef.current)  leftArmRef.current.rotation.x  = -swing * 0.45
         if (rightArmRef.current) rightArmRef.current.rotation.x  =  swing * 0.45
       } else {
@@ -92,6 +96,8 @@ export default function ClaudeOrb({
       }
     } else {
       if (isDefault) {
+        if (leftLegRef.current)  leftLegRef.current.rotation.x  *= 0.85
+        if (rightLegRef.current) rightLegRef.current.rotation.x *= 0.85
         if (leftArmRef.current)  leftArmRef.current.rotation.x  *= 0.85
         if (rightArmRef.current) rightArmRef.current.rotation.x *= 0.85
       } else {
@@ -161,43 +167,52 @@ export default function ClaudeOrb({
       )}
 
       {/* Body group */}
-      <group
-        ref={bodyRef}
-        onClick={(e) => {
-          if (!hasFriendAction) return
-          e.stopPropagation()
-          setShowFriendAction((value) => !value)
-        }}
-      >
+      <group ref={bodyRef}>
         <group ref={floatRef}>
 
           {isDefault ? (
-            // ── Block head + thin arms ─────────────────────────────────────
+            // ── Default humanoid ──────────────────────────────────────────
             <>
-              <mesh position={[0, 0.95, 0]}>
-                <boxGeometry args={[0.70, 0.70, 0.70]} />
-                <meshStandardMaterial color={color} emissive={color} emissiveIntensity={isPlayer ? 0.28 : 0.12} toneMapped={false} />
-              </mesh>
-              <mesh position={[-0.13, 0.99, 0.36]}>
-                <boxGeometry args={[0.10, 0.10, 0.02]} />
-                <meshStandardMaterial color="#1a0a00" />
-              </mesh>
-              <mesh position={[0.13, 0.99, 0.36]}>
-                <boxGeometry args={[0.10, 0.10, 0.02]} />
-                <meshStandardMaterial color="#1a0a00" />
-              </mesh>
-              <group position={[-0.41, 1.04, 0]}>
-                <mesh ref={leftArmRef} position={[0, -0.19, 0]}>
-                  <boxGeometry args={[0.12, 0.38, 0.12]} />
+              <group position={[-0.125, 0.75, 0]}>
+                <mesh ref={leftLegRef} position={[0, -0.375, 0]}>
+                  <boxGeometry args={[0.25, 0.75, 0.25]} />
                   <meshStandardMaterial color={limbColor} />
                 </mesh>
               </group>
-              <group position={[0.41, 1.04, 0]}>
-                <mesh ref={rightArmRef} position={[0, -0.19, 0]}>
-                  <boxGeometry args={[0.12, 0.38, 0.12]} />
+              <group position={[0.125, 0.75, 0]}>
+                <mesh ref={rightLegRef} position={[0, -0.375, 0]}>
+                  <boxGeometry args={[0.25, 0.75, 0.25]} />
                   <meshStandardMaterial color={limbColor} />
                 </mesh>
               </group>
+              <mesh position={[0, 1.125, 0]}>
+                <boxGeometry args={[0.5, 0.75, 0.25]} />
+                <meshStandardMaterial color={color} emissive={color} emissiveIntensity={isPlayer ? 0.22 : 0.1} toneMapped={false} />
+              </mesh>
+              <group position={[-0.375, 1.5, 0]}>
+                <mesh ref={leftArmRef} position={[0, -0.375, 0]}>
+                  <boxGeometry args={[0.25, 0.75, 0.25]} />
+                  <meshStandardMaterial color={limbColor} />
+                </mesh>
+              </group>
+              <group position={[0.375, 1.5, 0]}>
+                <mesh ref={rightArmRef} position={[0, -0.375, 0]}>
+                  <boxGeometry args={[0.25, 0.75, 0.25]} />
+                  <meshStandardMaterial color={limbColor} />
+                </mesh>
+              </group>
+              <mesh position={[0, 1.75, 0]}>
+                <boxGeometry args={[0.5, 0.5, 0.5]} />
+                <meshStandardMaterial color={color} emissive={color} emissiveIntensity={isPlayer ? 0.28 : 0.13} toneMapped={false} />
+              </mesh>
+              <mesh position={[-0.12, 1.79, 0.26]}>
+                <boxGeometry args={[0.1, 0.1, 0.02]} />
+                <meshStandardMaterial color="#1a0a00" />
+              </mesh>
+              <mesh position={[0.12, 1.79, 0.26]}>
+                <boxGeometry args={[0.1, 0.1, 0.02]} />
+                <meshStandardMaterial color="#1a0a00" />
+              </mesh>
             </>
           ) : (
             // ── Animal avatar ─────────────────────────────────────────────
@@ -250,15 +265,15 @@ export default function ClaudeOrb({
         {/* Player crown (default avatar only, no hat) */}
         {isPlayer && hat === 'none' && isDefault && (
           <>
-            <mesh position={[-0.13, headTop + 0.07, 0]}>
+            <mesh position={[-0.13, 2.07, 0]}>
               <boxGeometry args={[0.12, 0.12, 0.12]} />
               <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.5} toneMapped={false} />
             </mesh>
-            <mesh position={[0, headTop + 0.12, 0]}>
+            <mesh position={[0, 2.12, 0]}>
               <boxGeometry args={[0.12, 0.18, 0.12]} />
               <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.5} toneMapped={false} />
             </mesh>
-            <mesh position={[0.13, headTop + 0.07, 0]}>
+            <mesh position={[0.13, 2.07, 0]}>
               <boxGeometry args={[0.12, 0.12, 0.12]} />
               <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.5} toneMapped={false} />
             </mesh>
@@ -266,7 +281,7 @@ export default function ClaudeOrb({
         )}
 
         {/* Name tag */}
-        <Html position={[0, headTop + 0.25, 0]} center style={{ pointerEvents: hasFriendAction ? 'auto' : 'none', userSelect: 'none' }}>
+        <Html position={[0, headTop + 0.25, 0]} center style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div style={{
             background: isPlayer ? '#1e3a8a' : '#1a2744',
             border: `1px solid ${isPlayer ? '#3d6db5' : '#2a3a5a'}`,
@@ -279,63 +294,13 @@ export default function ClaudeOrb({
             display: 'flex',
             alignItems: 'center',
             gap: 4,
-            cursor: hasFriendAction ? 'pointer' : 'default',
           }}>
-            <span
-              onClick={(e) => {
-                if (!hasFriendAction) return
-                e.stopPropagation()
-                setShowFriendAction((value) => !value)
-              }}
-            >
-              {isPlayer ? `${name} ✦` : name}
-            </span>
+            <span>{isPlayer ? `${name} ✦` : name}</span>
             {clampedLevel >= 2 && (
               <span style={{ color: levelColor, fontSize: 9, fontWeight: 'bold' }}>Lv.{clampedLevel}</span>
             )}
           </div>
         </Html>
-
-        {hasFriendAction && showFriendAction && (
-          <Html position={[0, headTop + 0.48, 0]} center style={{ pointerEvents: 'auto', userSelect: 'none' }}>
-            <div
-              style={{
-                background: '#0d1b2a',
-                border: '1px solid #2a4a7f',
-                borderRadius: 8,
-                padding: '8px 10px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 6,
-                minWidth: 120,
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div style={{ color: '#7a9cc8', fontFamily: 'monospace', fontSize: 11 }}>{name}</div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (isFriend) onRemoveFriend?.()
-                  else onAddFriend?.()
-                  setShowFriendAction(false)
-                }}
-                style={{
-                  background: isFriend ? '#5a1f1f' : '#1e3a8a',
-                  border: `1px solid ${isFriend ? '#a85555' : '#3d6db5'}`,
-                  borderRadius: 6,
-                  padding: '5px 8px',
-                  color: 'white',
-                  fontFamily: 'monospace',
-                  fontSize: 11,
-                  cursor: 'pointer',
-                }}
-              >
-                {isFriend ? 'Remove Friend' : '+ Add Friend'}
-              </button>
-            </div>
-          </Html>
-        )}
 
         {/* Chat bubble */}
         {chat && (

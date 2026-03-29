@@ -12,7 +12,6 @@ import RooftopRoom from '@/components/rooms/RooftopRoom'
 import DungeonRoom from '@/components/rooms/DungeonRoom'
 import SpaceRoom from '@/components/rooms/SpaceRoom'
 import ClaudeOrb from './ClaudeOrb'
-import NPCManager from './NPCManager'
 import RemotePlayers from './RemotePlayers'
 
 const ROOM_COMPONENTS = {
@@ -47,7 +46,6 @@ export default function Room() {
   return (
     <>
       <RoomComponent />
-      <NPCManager />
       <RemotePlayers />
       <ClaudeOrb
         x={playerX}
