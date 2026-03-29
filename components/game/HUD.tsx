@@ -8,6 +8,7 @@ import WardrobeModal from '@/components/ui/WardrobeModal'
 import ProfileModal from '@/components/ui/ProfileModal'
 import BeachMinigame from '@/components/game/BeachMinigame'
 import AchievementsModal from '@/components/ui/AchievementsModal'
+import FriendsModal from '@/components/ui/FriendsModal'
 import { getLevel } from '@/lib/githubLevel'
 import { ACHIEVEMENTS } from '@/lib/achievements'
 import { playChat, playEmote, playRoomChange, toggleMute, isMuted } from '@/lib/sounds'
@@ -19,13 +20,16 @@ const EMOTES = [
 
 export default function HUD() {
   const [chatInput, setChatInput]     = useState('')
+  const [chatCooldown, setChatCooldown] = useState(false)
   const [showEmotes, setShowEmotes]   = useState(false)
   const [showColors, setShowColors]   = useState(false)
   const [showMap, setShowMap]         = useState(false)
   const [showWardrobe, setShowWardrobe] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [showMinigame, setShowMinigame] = useState(false)
+  const [showFriends, setShowFriends] = useState(false)
   const [showDailyToast, setShowDailyToast] = useState(false)
+  const [showOnlineToast, setShowOnlineToast] = useState(false)
   const [showAchievements, setShowAchievements] = useState(false)
   const [showGithubModal, setShowGithubModal] = useState(false)
   const [githubInput, setGithubInput] = useState('')
@@ -70,6 +74,14 @@ export default function HUD() {
       return () => clearTimeout(t)
     }
   }, [dailyBonusPending, dismissDailyBonus])
+
+  useEffect(() => {
+    if (onlineRewardPending > 0) {
+      setShowOnlineToast(true)
+      const t = setTimeout(() => { setShowOnlineToast(false); dismissOnlineReward() }, 4000)
+      return () => clearTimeout(t)
+    }
+  }, [onlineRewardPending, dismissOnlineReward])
 
   // Achievement unlock toast
   useEffect(() => {
@@ -162,6 +174,13 @@ export default function HUD() {
         </button>
         <div className="flex items-center gap-2">
           <button
+            onClick={handleMute}
+            className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-3 py-1.5 font-mono text-sm text-[#7a9cc8] backdrop-blur-sm hover:bg-[#1a2744cc] transition-colors"
+            title={muted ? 'Unmute' : 'Mute'}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
+          <button
             onClick={() => setShowGithubModal(true)}
             className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-4 py-1.5 font-mono text-sm text-yellow-400 backdrop-blur-sm hover:bg-[#1a2744cc] transition-colors"
             title={githubUsername ? `GitHub: ${githubUsername}` : 'Connect GitHub'}
@@ -236,6 +255,9 @@ export default function HUD() {
 
       {/* Achievements modal */}
       {showAchievements && <AchievementsModal onClose={() => setShowAchievements(false)} />}
+
+      {/* Friends modal */}
+      {showFriends && <FriendsModal onClose={() => setShowFriends(false)} />}
 
       {/* GitHub connect modal */}
       {showGithubModal && (
@@ -377,6 +399,13 @@ export default function HUD() {
           aria-label="Achievements"
         >
           🏆
+        </button>
+
+        <button
+          onClick={() => { setShowFriends(true); setShowEmotes(false); setShowColors(false) }}
+          className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0"
+        >
+          👥
         </button>
 
         {/* Map button */}

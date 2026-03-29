@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useGameStore } from '@/store/gameStore'
-import { HATS, VEHICLES, type HatId, type VehicleId } from '@/lib/skins'
+import { HATS, VEHICLES, RARITY_COLORS, type HatId, type VehicleId } from '@/lib/skins'
 import { AVATARS, type AvatarId } from '@/lib/avatars'
 
 interface WardrobeModalProps {
@@ -157,6 +157,12 @@ export default function WardrobeModal({ onClose }: WardrobeModalProps) {
                   <span className="font-mono text-[9px] text-[#7a9cc8] truncate w-full text-center">
                     {item.name}
                   </span>
+                  <span
+                    className="font-mono text-[8px] font-bold"
+                    style={{ color: RARITY_COLORS[item.rarity] }}
+                  >
+                    {item.rarity}
+                  </span>
                   {!owned && item.cost > 0 && (
                     <span className="font-mono text-[9px] text-yellow-400">{item.cost}🪙</span>
                   )}
@@ -191,6 +197,12 @@ export default function WardrobeModal({ onClose }: WardrobeModalProps) {
                   <span className="text-2xl">{item.emoji}</span>
                   <span className="font-mono text-[9px] text-[#7a9cc8] truncate w-full text-center">
                     {item.name}
+                  </span>
+                  <span
+                    className="font-mono text-[8px] font-bold"
+                    style={{ color: RARITY_COLORS[item.rarity] }}
+                  >
+                    {item.rarity}
                   </span>
                   {!owned && item.cost > 0 && (
                     <span className="font-mono text-[9px] text-yellow-400">{item.cost}🪙</span>

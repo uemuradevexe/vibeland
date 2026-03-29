@@ -1,6 +1,6 @@
 import type { Collider } from './collision'
 
-export type RoomId = 'plaza' | 'cafe' | 'beach' | 'library' | 'arcade' | 'garden'
+export type RoomId = 'plaza' | 'cafe' | 'beach' | 'library' | 'arcade' | 'garden' | 'rooftop' | 'dungeon' | 'space'
 
 export interface Door {
   side: 'left' | 'right'
@@ -143,6 +143,7 @@ export const ROOMS: Record<RoomId, RoomConfig> = {
     groundColor: '#1a0a30',
     accentColor: '#f000ff',
     doors: [
+      { side: 'left',  leadsTo: 'rooftop', label: 'Rooftop', emoji: '🏙️' },
       { side: 'right', leadsTo: 'library', label: 'Biblioteca', emoji: '📚' },
     ],
     npcCount: 3,
@@ -168,7 +169,8 @@ export const ROOMS: Record<RoomId, RoomConfig> = {
     groundColor: '#1a4a1a',
     accentColor: '#22c55e',
     doors: [
-      { side: 'left', leadsTo: 'beach', label: 'Praia', emoji: '🏖️' },
+      { side: 'left',  leadsTo: 'beach',   label: 'Praia',   emoji: '🏖️' },
+      { side: 'right', leadsTo: 'dungeon', label: 'Dungeon', emoji: '🕯️' },
     ],
     npcCount: 4,
     npcColors: ['#22c55e', '#86efac', '#fbbf24', '#f472b6'],
@@ -182,6 +184,71 @@ export const ROOMS: Record<RoomId, RoomConfig> = {
       { cx:  14, cz:  0,  hw: 0.6, hd: 0.6 },
       // Central pond
       { cx: 0, cz: 0, hw: 2.8, hd: 2.8 },
+    ],
+  },
+  rooftop: {
+    id: 'rooftop',
+    name: 'Rooftop',
+    emoji: '🏙️',
+    skyColor: '#050510',
+    groundColor: '#2a2a3a',
+    accentColor: '#ff6b35',
+    doors: [
+      { side: 'left',  leadsTo: 'space',  label: 'Estação', emoji: '🚀' },
+      { side: 'right', leadsTo: 'arcade', label: 'Arcade',  emoji: '🎮' },
+    ],
+    npcCount: 3,
+    npcColors: ['#ff6b35', '#e040fb', '#00e5ff'],
+    colliders: [
+      { cx: -10, cz: -10, hw: 2.0, hd: 1.5 },  // HVAC 1
+      { cx: 10,  cz: -12, hw: 1.5, hd: 1.5 },   // HVAC 2
+      { cx: 0,   cz: 12,  hw: 1.2, hd: 1.2 },    // water tower
+      { cx: -14, cz: 5,   hw: 0.5, hd: 0.5 },    // vent
+      { cx: 14,  cz: -5,  hw: 0.5, hd: 0.5 },    // vent
+    ],
+  },
+  dungeon: {
+    id: 'dungeon',
+    name: 'Dungeon',
+    emoji: '🕯️',
+    skyColor: '#0a0505',
+    groundColor: '#1a1008',
+    accentColor: '#ff8c00',
+    doors: [
+      { side: 'left',  leadsTo: 'garden', label: 'Jardim',  emoji: '🌿' },
+      { side: 'right', leadsTo: 'space',  label: 'Estação', emoji: '🚀' },
+    ],
+    npcCount: 3,
+    npcColors: ['#ff8c00', '#dc143c', '#8b4513'],
+    colliders: [
+      { cx: -8, cz: -8, hw: 1.0, hd: 1.0 },  // pillar
+      { cx: 8,  cz: -8, hw: 1.0, hd: 1.0 },   // pillar
+      { cx: -8, cz: 8,  hw: 1.0, hd: 1.0 },    // pillar
+      { cx: 8,  cz: 8,  hw: 1.0, hd: 1.0 },    // pillar
+      { cx: 0,  cz: 0,  hw: 1.5, hd: 1.0 },    // treasure chest
+      { cx: 0,  cz: -16, hw: 14, hd: 0.8 },    // back wall
+      { cx: -16, cz: 0,  hw: 0.8, hd: 14 },    // left wall
+    ],
+  },
+  space: {
+    id: 'space',
+    name: 'Estação Espacial',
+    emoji: '🚀',
+    skyColor: '#000008',
+    groundColor: '#0a0a1a',
+    accentColor: '#00e5ff',
+    doors: [
+      { side: 'left',  leadsTo: 'dungeon', label: 'Dungeon', emoji: '🕯️' },
+      { side: 'right', leadsTo: 'rooftop', label: 'Rooftop', emoji: '🏙️' },
+    ],
+    npcCount: 3,
+    npcColors: ['#00e5ff', '#76ff03', '#ff4081'],
+    colliders: [
+      { cx: 0,   cz: 0,   hw: 2.0, hd: 2.0 },    // reactor core
+      { cx: -12, cz: -10, hw: 2.5, hd: 1.0 },      // console bank
+      { cx: 12,  cz: -10, hw: 2.5, hd: 1.0 },      // console bank
+      { cx: -10, cz: 10,  hw: 1.5, hd: 1.5 },      // cargo pod
+      { cx: 10,  cz: 10,  hw: 1.5, hd: 1.5 },      // cargo pod
     ],
   },
 }

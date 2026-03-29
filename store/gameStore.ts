@@ -8,6 +8,7 @@ import {
   loadEquipped, saveEquipped,
   loadInventory, saveInventory,
 } from '@/lib/tokenStore'
+import { loadFriends, saveFriends, type Friend } from '@/lib/friends'
 import {
   ACHIEVEMENTS,
   loadAchievements, saveAchievements,
@@ -57,6 +58,7 @@ export interface GameState {
   inventory: string[]
   dailyBonusPending: number
   onlineRewardPending: number
+  friends: Friend[]
 
   // GitHub level
   githubUsername: string
@@ -314,6 +316,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const inventory = loadInventory()
     const achievements = loadAchievements()
     const gameStats = loadStats()
+    const friends = loadFriends()
 
     // Track login count
     const newStats: GameStats = { ...gameStats, loginCount: gameStats.loginCount + 1 }
@@ -336,6 +339,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       playerVehicle: equipped.vehicle as VehicleId,
       playerAvatar:  equipped.avatar  as AvatarId,
       inventory,
+      friends,
       achievements,
       gameStats: newStats,
       githubUsername: githubData?.username ?? '',

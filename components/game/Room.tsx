@@ -8,6 +8,9 @@ import BeachRoom from '@/components/rooms/BeachRoom'
 import LibraryRoom from '@/components/rooms/LibraryRoom'
 import ArcadeRoom from '@/components/rooms/ArcadeRoom'
 import GardenRoom from '@/components/rooms/GardenRoom'
+import RooftopRoom from '@/components/rooms/RooftopRoom'
+import DungeonRoom from '@/components/rooms/DungeonRoom'
+import SpaceRoom from '@/components/rooms/SpaceRoom'
 import ClaudeOrb from './ClaudeOrb'
 import RemotePlayers from './RemotePlayers'
 
@@ -18,6 +21,9 @@ const ROOM_COMPONENTS = {
   library: LibraryRoom,
   arcade: ArcadeRoom,
   garden: GardenRoom,
+  rooftop: RooftopRoom,
+  dungeon: DungeonRoom,
+  space: SpaceRoom,
 }
 
 export default function Room() {
