@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
@@ -20,6 +20,9 @@ interface ClaudeOrbProps {
   vehicle?: VehicleId
   avatar?: AvatarId
   level?: number
+  isFriend?: boolean
+  onAddFriend?: () => void
+  onRemoveFriend?: () => void
 }
 
 function darkenHex(hex: string, amount = 0.62): string {
@@ -34,6 +37,7 @@ export default function ClaudeOrb({
   x, z = 0, color, name, chat, emote,
   isPlayer, hat = 'none', vehicle = 'none',
   avatar = 'default', level = 1,
+  isFriend = false, onAddFriend, onRemoveFriend,
 }: ClaudeOrbProps) {
   const avatarDef  = AVATARS[avatar] ?? AVATARS.default
   const hatDef     = HATS[hat]     ?? HATS.none
@@ -54,15 +58,22 @@ export default function ClaudeOrb({
 
   const prevPos    = useRef({ x, z })
   const targetRotY = useRef(0)
-  const walkPhase  = useRef(Math.random() * Math.PI * 2)
-  const idlePhase  = useRef(Math.random() * Math.PI * 2)
+  const walkPhase  = useRef(0)
+  const idlePhase  = useRef(0)
+  const [showFriendAction, setShowFriendAction] = useState(false)
 
   const limbColor = darkenHex(color)
   const scale = isPlayer ? 1.1 : 1.0
   const headTop = avatarDef.pieces.length > 0 ? avatarDef.headTopY : 2.0
   const isDefault = avatar === 'default' || avatarDef.pieces.length === 0
+  const hasFriendAction = !isPlayer && (Boolean(onAddFriend) || Boolean(onRemoveFriend))
 
   const levelColor = LEVEL_COLORS[clampedLevel] ?? '#9E9E9E'
+
+  useEffect(() => {
+    walkPhase.current = Math.random() * Math.PI * 2
+    idlePhase.current = Math.random() * Math.PI * 2
+  }, [])
 
   useFrame((_, delta) => {
     if (!bodyRef.current || !floatRef.current) return
@@ -116,7 +127,7 @@ export default function ClaudeOrb({
 
   // Generate static particle positions — orbiting via group rotation
   const particleCount = Math.min(auraConfig.particleCount, 20)
-  const particles = Array.from({ length: particleCount }, (_, i) => {
+  const particles = useMemo(() => Array.from({ length: particleCount }, (_, i) => {
     const angle = (i / particleCount) * Math.PI * 2
     const r = 0.75 + (i % 3) * 0.15
     const py = 0.8 + (i % 5) * 0.22
@@ -126,7 +137,7 @@ export default function ClaudeOrb({
         <meshStandardMaterial color={auraColor} emissive={auraColor} emissiveIntensity={2.2} toneMapped={false} />
       </mesh>
     )
-  })
+  }), [particleCount, auraColor])
 
   return (
     <group position={[x, 0, z]} scale={[scale, scale, scale]}>
@@ -156,7 +167,14 @@ export default function ClaudeOrb({
       )}
 
       {/* Body group */}
-      <group ref={bodyRef}>
+      <group
+        ref={bodyRef}
+        onClick={(e) => {
+          if (!hasFriendAction) return
+          e.stopPropagation()
+          setShowFriendAction((value) => !value)
+        }}
+      >
         <group ref={floatRef}>
 
           {isDefault ? (
@@ -270,7 +288,7 @@ export default function ClaudeOrb({
         )}
 
         {/* Name tag */}
-        <Html position={[0, headTop + 0.25, 0]} center style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <Html position={[0, headTop + 0.25, 0]} center style={{ pointerEvents: hasFriendAction ? 'auto' : 'none', userSelect: 'none' }}>
           <div style={{
             background: isPlayer ? '#1e3a8a' : '#1a2744',
             border: `1px solid ${isPlayer ? '#3d6db5' : '#2a3a5a'}`,
@@ -283,13 +301,63 @@ export default function ClaudeOrb({
             display: 'flex',
             alignItems: 'center',
             gap: 4,
+            cursor: hasFriendAction ? 'pointer' : 'default',
           }}>
-            <span>{isPlayer ? `${name} ✦` : name}</span>
+            <span
+              onClick={(e) => {
+                if (!hasFriendAction) return
+                e.stopPropagation()
+                setShowFriendAction((value) => !value)
+              }}
+            >
+              {isPlayer ? `${name} ✦` : name}
+            </span>
             {clampedLevel >= 2 && (
               <span style={{ color: levelColor, fontSize: 9, fontWeight: 'bold' }}>Lv.{clampedLevel}</span>
             )}
           </div>
         </Html>
+
+        {hasFriendAction && showFriendAction && (
+          <Html position={[0, headTop + 0.48, 0]} center style={{ pointerEvents: 'auto', userSelect: 'none' }}>
+            <div
+              style={{
+                background: '#0d1b2a',
+                border: '1px solid #2a4a7f',
+                borderRadius: 8,
+                padding: '8px 10px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 6,
+                minWidth: 120,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ color: '#7a9cc8', fontFamily: 'monospace', fontSize: 11 }}>{name}</div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (isFriend) onRemoveFriend?.()
+                  else onAddFriend?.()
+                  setShowFriendAction(false)
+                }}
+                style={{
+                  background: isFriend ? '#5a1f1f' : '#1e3a8a',
+                  border: `1px solid ${isFriend ? '#a85555' : '#3d6db5'}`,
+                  borderRadius: 6,
+                  padding: '5px 8px',
+                  color: 'white',
+                  fontFamily: 'monospace',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                }}
+              >
+                {isFriend ? 'Remove Friend' : '+ Add Friend'}
+              </button>
+            </div>
+          </Html>
+        )}
 
         {/* Chat bubble */}
         {chat && (
