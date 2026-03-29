@@ -33,7 +33,7 @@ export default function HUD() {
   const [githubError, setGithubError] = useState<string | null>(null)
   const [showAchievementToast, setShowAchievementToast] = useState(false)
   const [showOnlineToast, setShowOnlineToast] = useState(false)
-  const [muted, setMuted] = useState(false)
+  const [muted, setMuted] = useState(isMuted)
   const [chatCooldown, setChatCooldown] = useState(false)
   const cooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 

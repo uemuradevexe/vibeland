@@ -160,3 +160,32 @@ Five more bugs fixed across ProfileModal, Door, GitHub API, and PlazaRoom night 
 - Door.tsx drag-end triggers room change (#90)
 - GitHub profile API unauthenticated → rate-limited at 60 req/h (#91)
 - PlazaRoom moon/stars always visible regardless of day/night cycle (#92)
+
+---
+
+## 2026-03-29 — Round 5 — Branch: `fix/issues-63-70` (continued)
+
+### Summary
+Five more bugs found and fixed in a deep audit of `useTokenRewards`, `server/ws.ts`, `HUD.tsx`, `SittableObject.tsx`.
+
+### Changes
+
+#### `hooks/useTokenRewards.ts`
+- **Added `checkAchievements()` call after online reward** — the 15-minute token reward used `useGameStore.setState(...)` directly, bypassing store actions and never triggering achievement checks. The `token_saver` achievement (500 tokens) would not fire if the player crossed 500 via this reward. (closes #93)
+
+#### `server/ws.ts`
+- **Added `.trim()` and empty-string guard to `chat` handler** — blank or all-whitespace messages are now rejected before broadcast. Prevents malicious clients from sending blank chat bubbles to all room players. (closes #94)
+- **Trimmed player name before fallback to 'Anon'** — changed `String(msg.name || 'Anon').slice(0,24)` to `(String(msg.name || '').trim().slice(0,24)) || 'Anon'`. A name of all spaces was truthy and bypassed the 'Anon' fallback, causing blank name tags. (closes #97)
+
+#### `components/game/HUD.tsx`
+- **Fixed mute button initial state** — changed `useState(false)` to `useState(isMuted)` (lazy initializer). The button now correctly reflects the actual mute state at mount time instead of always showing 🔊. (closes #95)
+
+#### `components/game/SittableObject.tsx`
+- **Added `dragStateRef` guard** — camera drag-end over a bench no longer triggers sit+teleport. Same fix pattern as Door.tsx (#90). Also removed the unused `THREE` import. (closes #96)
+
+### Issues addressed (fifth round — #93–#97)
+- `useTokenRewards` bypasses `checkAchievements` — `token_saver` achievement broken for online reward path (#93)
+- Server broadcasts blank/whitespace chat messages (#94)
+- HUD mute button always initializes to unmuted (#95)
+- SittableObject camera drag triggers sit (#96)
+- Server player name not trimmed — blank name possible (#97)

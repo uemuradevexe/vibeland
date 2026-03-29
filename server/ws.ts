@@ -94,7 +94,7 @@ wss.on('connection', (ws) => {
     if (msg.type === 'join') {
       const state: PlayerState = {
         id,
-        name:    String(msg.name  || 'Anon').slice(0, 24),
+        name:    (String(msg.name  || '').trim().slice(0, 24)) || 'Anon',
         color:   validColor(msg.color),
         hat:     validHat(msg.hat),
         vehicle: validVehicle(msg.vehicle),
@@ -126,7 +126,8 @@ wss.on('connection', (ws) => {
 
       // ── chat ────────────────────────────────────────────────────────────
       case 'chat': {
-        const message = String(msg.message || '').slice(0, 120)
+        const message = String(msg.message || '').trim().slice(0, 120)
+        if (!message) break
         player.chat = message
         broadcastToRoom(player.room, { type: 'player_chat', id, message }, ws)
         break
