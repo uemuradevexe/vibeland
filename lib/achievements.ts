@@ -12,7 +12,7 @@ export interface Achievement {
 }
 
 export const ACHIEVEMENTS: Record<AchievementId, Achievement> = {
-  first_steps:       { id: 'first_steps',       name: 'First Steps',       emoji: '🗺️', description: 'Visit all 4 rooms',               maxProgress: 4  },
+  first_steps:       { id: 'first_steps',       name: 'First Steps',       emoji: '🗺️', description: 'Visit all 6 rooms',               maxProgress: 6  },
   world_traveler:    { id: 'world_traveler',     name: 'World Traveler',    emoji: '🌍', description: 'Switch rooms 20 times',           maxProgress: 20 },
   chatterbox:        { id: 'chatterbox',         name: 'Chatterbox',        emoji: '💬', description: 'Send 50 chat messages',           maxProgress: 50 },
   party_starter:     { id: 'party_starter',      name: 'Party Starter',     emoji: '🎉', description: 'Use 6 different emotes',          maxProgress: 6  },

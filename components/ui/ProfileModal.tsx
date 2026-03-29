@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useGameStore } from '@/store/gameStore'
 import { HATS, VEHICLES } from '@/lib/skins'
+import { AVATARS } from '@/lib/avatars'
 import { ROOMS } from '@/lib/roomConfig'
 
 interface Props {
@@ -14,9 +15,11 @@ export default function ProfileModal({ onClose }: Props) {
   const playerColor   = useGameStore((s) => s.playerColor)
   const playerHat     = useGameStore((s) => s.playerHat)
   const playerVehicle = useGameStore((s) => s.playerVehicle)
+  const playerAvatar  = useGameStore((s) => s.playerAvatar)
   const tokens        = useGameStore((s) => s.tokens)
   const inventory     = useGameStore((s) => s.inventory)
   const currentRoom   = useGameStore((s) => s.currentRoom)
+  const githubLevel   = useGameStore((s) => s.githubLevel)
 
   const [ghUsername, setGhUsername] = useState('')
   const [ghProfile, setGhProfile] = useState<{ name: string; repos: number; followers: number; avatar: string } | null>(null)
@@ -25,9 +28,11 @@ export default function ProfileModal({ onClose }: Props) {
 
   const hatDef     = HATS[playerHat]
   const vehicleDef = VEHICLES[playerVehicle]
+  const avatarDef  = AVATARS[playerAvatar] ?? AVATARS.default
 
   const ownedHats     = inventory.filter((id) => id in HATS)
   const ownedVehicles = inventory.filter((id) => id in VEHICLES)
+  const ownedAvatars  = inventory.filter((id) => id in AVATARS)
 
   async function fetchGitHub() {
     if (!ghUsername.trim()) return
@@ -45,7 +50,6 @@ export default function ProfileModal({ onClose }: Props) {
     }
   }
 
-  const level = Math.floor(tokens / 100) + 1
   const xpInLevel = tokens % 100
   const xpPercent = xpInLevel
 
@@ -68,17 +72,15 @@ export default function ProfileModal({ onClose }: Props) {
         <div className="flex items-center gap-4">
           {/* Orb preview */}
           <div
-            className="w-16 h-16 rounded-full flex-shrink-0 border-4 border-white/20"
+            className="w-16 h-16 rounded-full flex-shrink-0 border-4 border-white/20 relative overflow-hidden"
             style={{
               backgroundColor: playerColor,
               boxShadow: `0 0 20px ${playerColor}88`,
             }}
           >
-            {hatDef.emoji !== '🚫' && (
-              <div className="w-full h-full flex items-center justify-center text-2xl leading-none">
-                {hatDef.emoji}
-              </div>
-            )}
+            <div className="w-full h-full flex items-center justify-center text-2xl leading-none">
+              {avatarDef.id !== 'default' ? avatarDef.emoji : hatDef.emoji !== '🚫' ? hatDef.emoji : ''}
+            </div>
           </div>
           <div className="flex flex-col gap-1 min-w-0">
             <p className="font-mono font-bold text-white truncate">{playerName || 'Anônimo'}</p>
@@ -86,7 +88,7 @@ export default function ProfileModal({ onClose }: Props) {
             <div className="flex items-center gap-1.5">
               <span className="font-mono text-xs text-yellow-400">💰 {tokens}</span>
               <span className="font-mono text-xs text-[#3d6db5]">·</span>
-              <span className="font-mono text-xs text-[#7a9cc8]">Nível {level}</span>
+              <span className="font-mono text-xs text-[#7a9cc8]">Nível {githubLevel}</span>
             </div>
           </div>
         </div>
@@ -107,6 +109,12 @@ export default function ProfileModal({ onClose }: Props) {
 
         {/* Equipped */}
         <div className="bg-[#111e38] rounded-xl p-3 flex gap-3">
+          <div className="flex-1 text-center">
+            <p className="font-mono text-xs text-[#5a7aa8] mb-1">Avatar</p>
+            <p className="text-xl">{avatarDef.emoji}</p>
+            <p className="font-mono text-xs text-white mt-1">{avatarDef.name}</p>
+          </div>
+          <div className="w-px bg-[#2a4a7f]" />
           <div className="flex-1 text-center">
             <p className="font-mono text-xs text-[#5a7aa8] mb-1">Chapéu</p>
             <p className="text-xl">{hatDef.emoji}</p>
@@ -132,6 +140,11 @@ export default function ProfileModal({ onClose }: Props) {
             {ownedVehicles.filter(id => id !== 'none').map((id) => (
               <span key={id} className="bg-[#1a2744] border border-[#2a4a7f] rounded-lg px-2 py-0.5 font-mono text-xs text-white">
                 {VEHICLES[id as keyof typeof VEHICLES]?.emoji} {VEHICLES[id as keyof typeof VEHICLES]?.name}
+              </span>
+            ))}
+            {ownedAvatars.map((id) => (
+              <span key={id} className="bg-[#1a2744] border border-[#2a4a7f] rounded-lg px-2 py-0.5 font-mono text-xs text-white">
+                {AVATARS[id as keyof typeof AVATARS]?.emoji} {AVATARS[id as keyof typeof AVATARS]?.name}
               </span>
             ))}
             {inventory.filter(i => i !== 'none').length === 0 && (

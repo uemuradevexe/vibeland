@@ -87,6 +87,7 @@ export interface GameState {
   npcs: NPC[]
 
   // Multiplayer
+  wsConnected: boolean
   remotePlayers: Record<string, RemotePlayer>
 
   // Actions
@@ -160,6 +161,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   pendingAchievement: null,
   currentRoom: 'plaza',
   npcs: [],
+  wsConnected: false,
   remotePlayers: {},
 
   setPlayer: (name, color) => set({ playerName: name, playerColor: color }),
@@ -331,20 +333,22 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // ── Skins & Tokens ──────────────────────────────────────────────────
   equipHat: (hat) => {
-    const { playerVehicle } = get()
-    saveEquipped(hat, playerVehicle)
+    const { playerVehicle, playerAvatar } = get()
+    saveEquipped(hat, playerVehicle, playerAvatar)
     set({ playerHat: hat })
     get().checkAchievements()
   },
 
   equipVehicle: (vehicle) => {
-    const { playerHat } = get()
-    saveEquipped(playerHat, vehicle)
+    const { playerHat, playerAvatar } = get()
+    saveEquipped(playerHat, vehicle, playerAvatar)
     set({ playerVehicle: vehicle })
     get().checkAchievements()
   },
 
   equipAvatar: (avatar) => {
+    const { playerHat, playerVehicle } = get()
+    saveEquipped(playerHat, playerVehicle, avatar)
     set({ playerAvatar: avatar })
     get().checkAchievements()
   },
@@ -389,8 +393,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       tokens: finalTokens,
       dailyBonusPending: bonus,
-      playerHat: equipped.hat as HatId,
+      playerHat:     equipped.hat     as HatId,
       playerVehicle: equipped.vehicle as VehicleId,
+      playerAvatar:  equipped.avatar  as AvatarId,
       inventory,
       friends,
       achievements,

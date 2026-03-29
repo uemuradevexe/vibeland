@@ -71,15 +71,17 @@ export function useMultiplayer() {
           store.upsertRemotePlayer({ id: String(msg.id), color: String(msg.color) })
           break
 
-        case 'player_equipped':
-          store.upsertRemotePlayer({
-            id: String(msg.id),
-            hat: String(msg.hat),
+        case 'player_equipped': {
+          const patch: Parameters<typeof store.upsertRemotePlayer>[0] = {
+            id:      String(msg.id),
+            hat:     String(msg.hat),
             vehicle: String(msg.vehicle),
-            avatar: msg.avatar !== undefined ? String(msg.avatar) : undefined,
-            level: msg.level !== undefined ? Number(msg.level) : undefined,
-          })
+          }
+          if (msg.avatar !== undefined) patch.avatar = String(msg.avatar)
+          if (msg.level  !== undefined) patch.level  = Number(msg.level)
+          store.upsertRemotePlayer(patch)
           break
+        }
 
         case 'player_left':
           store.removeRemotePlayer(String(msg.id))
@@ -87,8 +89,12 @@ export function useMultiplayer() {
       }
     }
 
+    ws.onopen = () => useGameStore.setState({ wsConnected: true })
     ws.onerror = () => console.warn('[WS] connection error — is the server running?')
-    ws.onclose = () => useGameStore.getState().setRemotePlayers([])
+    ws.onclose = () => {
+      useGameStore.setState({ wsConnected: false })
+      useGameStore.getState().setRemotePlayers([])
+    }
 
     // ── Throttled position broadcast (~20 Hz) ───────────────────────────
     let lastX = 0, lastZ = 0
