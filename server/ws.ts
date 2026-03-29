@@ -1,6 +1,19 @@
 import { WebSocketServer, WebSocket } from 'ws'
 
-type RoomId = 'plaza' | 'cafe' | 'beach' | 'library'
+type RoomId = 'plaza' | 'cafe' | 'beach' | 'library' | 'arcade' | 'garden'
+
+const VALID_ROOMS = new Set<RoomId>(['plaza', 'cafe', 'beach', 'library', 'arcade', 'garden'])
+const POSITION_BOUND = 17   // matches client KeyboardInput ±17 limit
+
+function validRoom(v: unknown): RoomId {
+  return VALID_ROOMS.has(v as RoomId) ? (v as RoomId) : 'plaza'
+}
+
+function clampPos(v: unknown): number {
+  const n = Number(v)
+  if (!isFinite(n)) return 0
+  return Math.max(-POSITION_BOUND, Math.min(POSITION_BOUND, n))
+}
 
 interface PlayerState {
   id: string
@@ -84,7 +97,7 @@ wss.on('connection', (ws) => {
         avatar:  validAvatar(msg.avatar),
         level:   Math.max(1, Math.min(10, Number(msg.level) || 1)),
         x: 0, z: 0,
-        room:  (msg.room as RoomId) || 'plaza',
+        room:  validRoom(msg.room),
         chat:  null,
         emote: null,
       }
@@ -102,8 +115,8 @@ wss.on('connection', (ws) => {
     switch (msg.type) {
       // ── move ────────────────────────────────────────────────────────────
       case 'move':
-        player.x = Number(msg.x) || 0
-        player.z = Number(msg.z) || 0
+        player.x = clampPos(msg.x)
+        player.z = clampPos(msg.z)
         broadcastToRoom(player.room, { type: 'player_moved', id, x: player.x, z: player.z, room: player.room }, ws)
         break
 
@@ -151,7 +164,7 @@ wss.on('connection', (ws) => {
       // ── change_room ──────────────────────────────────────────────────────
       case 'change_room': {
         const oldRoom = player.room
-        const newRoom = (msg.room as RoomId) || 'plaza'
+        const newRoom = validRoom(msg.room)
         broadcastToRoom(oldRoom, { type: 'player_left', id }, ws)
 
         player.room  = newRoom

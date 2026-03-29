@@ -328,20 +328,22 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // ── Skins & Tokens ──────────────────────────────────────────────────
   equipHat: (hat) => {
-    const { playerVehicle } = get()
-    saveEquipped(hat, playerVehicle)
+    const { playerVehicle, playerAvatar } = get()
+    saveEquipped(hat, playerVehicle, playerAvatar)
     set({ playerHat: hat })
     get().checkAchievements()
   },
 
   equipVehicle: (vehicle) => {
-    const { playerHat } = get()
-    saveEquipped(playerHat, vehicle)
+    const { playerHat, playerAvatar } = get()
+    saveEquipped(playerHat, vehicle, playerAvatar)
     set({ playerVehicle: vehicle })
     get().checkAchievements()
   },
 
   equipAvatar: (avatar) => {
+    const { playerHat, playerVehicle } = get()
+    saveEquipped(playerHat, playerVehicle, avatar)
     set({ playerAvatar: avatar })
     get().checkAchievements()
   },
@@ -385,8 +387,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       tokens: finalTokens,
       dailyBonusPending: bonus,
-      playerHat: equipped.hat as HatId,
+      playerHat:     equipped.hat     as HatId,
       playerVehicle: equipped.vehicle as VehicleId,
+      playerAvatar:  equipped.avatar  as AvatarId,
       inventory,
       achievements,
       gameStats: newStats,

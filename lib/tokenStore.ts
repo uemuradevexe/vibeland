@@ -24,19 +24,24 @@ export function claimDailyBonus(): number {
   return DAILY_BONUS
 }
 
-export function loadEquipped(): { hat: string; vehicle: string } {
-  if (typeof window === 'undefined') return { hat: 'none', vehicle: 'none' }
+export function loadEquipped(): { hat: string; vehicle: string; avatar: string } {
+  if (typeof window === 'undefined') return { hat: 'none', vehicle: 'none', avatar: 'default' }
   try {
     const raw = localStorage.getItem('vl_equipped')
-    return raw ? JSON.parse(raw) : { hat: 'none', vehicle: 'none' }
+    const parsed = raw ? JSON.parse(raw) : {}
+    return {
+      hat:     parsed.hat     ?? 'none',
+      vehicle: parsed.vehicle ?? 'none',
+      avatar:  parsed.avatar  ?? 'default',
+    }
   } catch {
-    return { hat: 'none', vehicle: 'none' }
+    return { hat: 'none', vehicle: 'none', avatar: 'default' }
   }
 }
 
-export function saveEquipped(hat: string, vehicle: string): void {
+export function saveEquipped(hat: string, vehicle: string, avatar: string): void {
   if (typeof window === 'undefined') return
-  localStorage.setItem('vl_equipped', JSON.stringify({ hat, vehicle }))
+  localStorage.setItem('vl_equipped', JSON.stringify({ hat, vehicle, avatar }))
 }
 
 export function loadInventory(): string[] {
