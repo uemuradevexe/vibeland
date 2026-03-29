@@ -9,6 +9,7 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import Room from './Room'
 import HUD from './HUD'
 import DayNightCycle from './DayNightCycle'
+import KeyboardInput from './KeyboardInput'
 import { useGameStore } from '@/store/gameStore'
 import { useMultiplayer } from '@/hooks/useMultiplayer'
 import { useTokenRewards } from '@/hooks/useTokenRewards'
@@ -21,6 +22,14 @@ export const dragStateRef = { current: { startX: 0, startY: 0, didDrag: false } 
 const _dest      = new THREE.Vector3()
 const _prevTarget = new THREE.Vector3()
 const _delta     = new THREE.Vector3()
+
+function GameLoop() {
+  useFrame((_, delta) => {
+    useGameStore.getState().tickGame(Math.min(delta, 0.1))
+  })
+
+  return null
+}
 
 function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null)
@@ -87,6 +96,8 @@ export default function GameCanvas() {
         onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
         style={{ touchAction: 'none' }}
       >
+        <GameLoop />
+        <KeyboardInput />
         <CameraRig />
         <DayNightCycle />
         <Suspense fallback={null}>
