@@ -143,6 +143,7 @@ export const ROOMS: Record<RoomId, RoomConfig> = {
     groundColor: '#1a0a30',
     accentColor: '#f000ff',
     doors: [
+      { side: 'left',  leadsTo: 'rooftop', label: 'Rooftop', emoji: '🏙️' },
       { side: 'right', leadsTo: 'library', label: 'Biblioteca', emoji: '📚' },
     ],
     npcCount: 3,
@@ -168,7 +169,8 @@ export const ROOMS: Record<RoomId, RoomConfig> = {
     groundColor: '#1a4a1a',
     accentColor: '#22c55e',
     doors: [
-      { side: 'left', leadsTo: 'beach', label: 'Praia', emoji: '🏖️' },
+      { side: 'left',  leadsTo: 'beach',   label: 'Praia',   emoji: '🏖️' },
+      { side: 'right', leadsTo: 'dungeon', label: 'Dungeon', emoji: '🕯️' },
     ],
     npcCount: 4,
     npcColors: ['#22c55e', '#86efac', '#fbbf24', '#f472b6'],

@@ -1,7 +1,7 @@
 'use client'
 
-import * as THREE from 'three'
 import { useGameStore } from '@/store/gameStore'
+import { dragStateRef } from '@/components/game/GameCanvas'
 
 interface Props {
   position: [number, number, number]
@@ -17,6 +17,7 @@ export default function SittableObject({ position, rotation = 0, children }: Pro
 
   function handleClick(e: { stopPropagation: () => void }) {
     e.stopPropagation()
+    if (dragStateRef.current.didDrag) return
     setPlayerTarget(position[0], position[2])
     sendEmote('🪑')
   }

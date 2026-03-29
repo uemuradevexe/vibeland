@@ -15,6 +15,7 @@ export function useTokenRewards() {
       const next = state.tokens + ONLINE_REWARD
       saveTokens(next)
       useGameStore.setState({ tokens: next, onlineRewardPending: ONLINE_REWARD })
+      useGameStore.getState().checkAchievements()
       playTokenReward()
     }, ONLINE_INTERVAL_MS)
     return () => clearInterval(timer)

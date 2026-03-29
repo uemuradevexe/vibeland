@@ -20,7 +20,7 @@ export interface AvatarDef {
 }
 
 export const AVATARS: Record<AvatarId, AvatarDef> = {
-  default: { id: 'default', name: 'Claude', emoji: '🟣', cost: 0, headTopY: 2.0, pieces: [] },
+  default: { id: 'default', name: 'Claude', emoji: '🟣', cost: 0, headTopY: 1.30, pieces: [] },
 
   turtle: {
     id: 'turtle', name: 'Turtle', emoji: '🐢', cost: 0, headTopY: 1.0,

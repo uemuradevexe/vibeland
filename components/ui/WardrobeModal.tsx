@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useGameStore } from '@/store/gameStore'
-import { HATS, VEHICLES, type HatId, type VehicleId } from '@/lib/skins'
+import { HATS, VEHICLES, RARITY_COLORS, type HatId, type VehicleId } from '@/lib/skins'
 import { AVATARS, type AvatarId } from '@/lib/avatars'
 
 interface WardrobeModalProps {
@@ -26,30 +26,34 @@ export default function WardrobeModal({ onClose }: WardrobeModalProps) {
   const buyItem       = useGameStore((s) => s.buyItem)
 
   function handleSelectHatOrVehicle(id: string, cost: number, type: 'hat' | 'vehicle') {
-    if (!inventory.includes(id) && cost > 0) {
+    if (!inventory.includes(id)) {
       const ok = buyItem(id, cost)
       if (!ok) {
         setFeedback('Not enough tokens ✗')
         setTimeout(() => setFeedback(null), 2000)
         return
       }
-      setFeedback('Unlocked! ✦')
-      setTimeout(() => setFeedback(null), 2000)
+      if (cost > 0) {
+        setFeedback('Unlocked! ✦')
+        setTimeout(() => setFeedback(null), 2000)
+      }
     }
     if (type === 'hat') equipHat(id as HatId)
     else equipVehicle(id as VehicleId)
   }
 
   function handleSelectAvatar(id: AvatarId, cost: number) {
-    if (!inventory.includes(id) && cost > 0) {
+    if (!inventory.includes(id)) {
       const ok = buyItem(id, cost)
       if (!ok) {
         setFeedback('Not enough tokens ✗')
         setTimeout(() => setFeedback(null), 2000)
         return
       }
-      setFeedback('Unlocked! ✦')
-      setTimeout(() => setFeedback(null), 2000)
+      if (cost > 0) {
+        setFeedback('Unlocked! ✦')
+        setTimeout(() => setFeedback(null), 2000)
+      }
     }
     equipAvatar(id)
   }
@@ -153,6 +157,12 @@ export default function WardrobeModal({ onClose }: WardrobeModalProps) {
                   <span className="font-mono text-[9px] text-[#7a9cc8] truncate w-full text-center">
                     {item.name}
                   </span>
+                  <span
+                    className="font-mono text-[8px] font-bold"
+                    style={{ color: RARITY_COLORS[item.rarity] }}
+                  >
+                    {item.rarity}
+                  </span>
                   {!owned && item.cost > 0 && (
                     <span className="font-mono text-[9px] text-yellow-400">{item.cost}🪙</span>
                   )}
@@ -187,6 +197,12 @@ export default function WardrobeModal({ onClose }: WardrobeModalProps) {
                   <span className="text-2xl">{item.emoji}</span>
                   <span className="font-mono text-[9px] text-[#7a9cc8] truncate w-full text-center">
                     {item.name}
+                  </span>
+                  <span
+                    className="font-mono text-[8px] font-bold"
+                    style={{ color: RARITY_COLORS[item.rarity] }}
+                  >
+                    {item.rarity}
                   </span>
                   {!owned && item.cost > 0 && (
                     <span className="font-mono text-[9px] text-yellow-400">{item.cost}🪙</span>
