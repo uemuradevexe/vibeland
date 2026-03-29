@@ -1,149 +1,208 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import * as Ably from 'ably'
 import { useGameStore } from '@/store/gameStore'
-import type { RemotePlayer } from '@/store/gameStore'
+import {
+  buildPresencePlayerData,
+  getRealtimeClientId,
+  getRealtimeRoomChannel,
+  presenceDataToRemotePlayer,
+} from '@/lib/realtime'
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:3001'
 const MOVE_HZ = 20        // position broadcast frequency
 const MOVE_THRESHOLD = 0.01 // skip tiny position changes
 
 export function useMultiplayer() {
-  const wsRef = useRef<WebSocket | null>(null)
+  const realtimeRef = useRef<Ably.Realtime | null>(null)
+  const channelRef = useRef<Ably.RealtimeChannel | null>(null)
+  const roomRef = useRef<string | null>(null)
+  const joinTokenRef = useRef(0)
 
   useEffect(() => {
-    const ws = new WebSocket(WS_URL)
-    wsRef.current = ws
+    const clientId = getRealtimeClientId()
+    const realtime = new Ably.Realtime({
+      clientId,
+      authUrl: `/api/realtime/token?clientId=${encodeURIComponent(clientId)}`,
+      echoMessages: false,
+    })
+    realtimeRef.current = realtime
 
-    ws.onmessage = (ev) => {
-      let msg: Record<string, unknown>
-      try { msg = JSON.parse(ev.data) } catch { return }
+    const buildSelfPresence = () => {
+      const state = useGameStore.getState()
+      return buildPresencePlayerData({
+        name: state.playerName || 'Anon',
+        color: state.playerColor,
+        hat: state.playerHat,
+        vehicle: state.playerVehicle,
+        avatar: state.playerAvatar,
+        level: state.githubLevel,
+        x: state.playerX,
+        z: state.playerZ,
+        room: state.currentRoom,
+      })
+    }
+
+    const syncRoomMembers = async (channel: Ably.RealtimeChannel) => {
+      const members = await channel.presence.get()
+      const store = useGameStore.getState()
+      const players = members
+        .filter((member) => member.clientId !== clientId)
+        .map((member) => presenceDataToRemotePlayer(member.clientId, member.data ?? {}))
+        .filter((player): player is NonNullable<typeof player> => player !== null)
+
+      store.setRemotePlayers(players)
+      for (const player of players) {
+        store.trackStat('seenPlayers', player.id)
+      }
+    }
+
+    const handlePresence = (message: Ably.PresenceMessage) => {
+      if (message.clientId === clientId) return
 
       const store = useGameStore.getState()
+      if (message.action === 'leave') {
+        store.removeRemotePlayer(message.clientId)
+        return
+      }
 
-      switch (msg.type) {
-        // Server assigned us an ID — now introduce ourselves
-        case 'welcome': {
-          ws.send(JSON.stringify({
-            type:    'join',
-            name:    store.playerName  || 'Anon',
-            color:   store.playerColor,
-            hat:     store.playerHat,
-            vehicle: store.playerVehicle,
-            avatar:  store.playerAvatar,
-            level:   store.githubLevel,
-            room:    store.currentRoom,
-          }))
-          break
-        }
+      const player = presenceDataToRemotePlayer(message.clientId, message.data ?? {})
+      if (!player) return
 
-        // Snapshot of everyone already in the room
-        case 'room_state': {
-          const players = msg.players as RemotePlayer[]
-          store.setRemotePlayers(players)
-          // Track seen players for social_butterfly achievement
-          for (const p of players) {
-            store.trackStat('seenPlayers', p.id)
-          }
-          break
-        }
+      store.upsertRemotePlayer(player)
+      store.trackStat('seenPlayers', player.id)
+    }
 
-        case 'player_joined': {
-          const p = msg.player as RemotePlayer
-          store.upsertRemotePlayer(p)
-          store.trackStat('seenPlayers', p.id)
-          break
-        }
+    const handleMessage = (message: Ably.Message) => {
+      if (message.clientId === clientId) return
 
-        case 'player_moved':
-          store.upsertRemotePlayer({ id: String(msg.id), x: Number(msg.x), z: Number(msg.z), room: msg.room as RemotePlayer['room'] })
+      const store = useGameStore.getState()
+      const payload = (message.data ?? {}) as Record<string, unknown>
+      const id = typeof payload.id === 'string' ? payload.id : (message.clientId ?? '')
+      if (!id) return
+
+      switch (message.name) {
+        case 'move':
+          store.upsertRemotePlayer({
+            id,
+            x: Number(payload.x),
+            z: Number(payload.z),
+            room: store.currentRoom,
+          })
           break
 
-        case 'player_chat':
-          store.upsertRemotePlayer({ id: String(msg.id), chat: String(msg.message), chatTimer: 4 })
+        case 'chat':
+          store.upsertRemotePlayer({ id, chat: String(payload.message ?? ''), chatTimer: 4 })
           break
 
-        case 'player_emote':
-          store.upsertRemotePlayer({ id: String(msg.id), emote: String(msg.emote), emoteTimer: 2 })
-          break
-
-        case 'player_color_changed':
-          store.upsertRemotePlayer({ id: String(msg.id), color: String(msg.color) })
-          break
-
-        case 'player_equipped': {
-          const patch: Parameters<typeof store.upsertRemotePlayer>[0] = {
-            id:      String(msg.id),
-            hat:     String(msg.hat),
-            vehicle: String(msg.vehicle),
-          }
-          if (msg.avatar !== undefined) patch.avatar = String(msg.avatar)
-          if (msg.level  !== undefined) patch.level  = Number(msg.level)
-          store.upsertRemotePlayer(patch)
-          break
-        }
-
-        case 'player_left':
-          store.removeRemotePlayer(String(msg.id))
+        case 'emote':
+          store.upsertRemotePlayer({ id, emote: String(payload.emote ?? ''), emoteTimer: 2 })
           break
       }
     }
 
-    ws.onopen = () => useGameStore.setState({ wsConnected: true })
-    ws.onerror = () => console.warn('[WS] connection error — is the server running?')
-    ws.onclose = () => {
-      useGameStore.setState({ wsConnected: false })
-      useGameStore.getState().setRemotePlayers([])
+    const leaveCurrentRoom = async () => {
+      const current = channelRef.current
+      if (!current) return
+
+      try { await current.presence.leave() } catch {}
+      current.presence.unsubscribe(handlePresence)
+      current.unsubscribe(handleMessage)
+      try { await current.detach() } catch {}
+
+      channelRef.current = null
+      roomRef.current = null
     }
 
+    const joinRoom = async (room: ReturnType<typeof useGameStore.getState>['currentRoom']) => {
+      const joinToken = ++joinTokenRef.current
+      await leaveCurrentRoom()
+
+      const channel = realtime.channels.get(getRealtimeRoomChannel(room))
+      channelRef.current = channel
+      roomRef.current = room
+
+      await channel.subscribe(handleMessage)
+      await channel.presence.subscribe(handlePresence)
+      await channel.presence.enter(buildSelfPresence())
+
+      if (joinToken !== joinTokenRef.current) return
+      await syncRoomMembers(channel)
+    }
+
+    realtime.connection.on((stateChange) => {
+      const connected = stateChange.current === 'connected'
+      useGameStore.setState({
+        wsConnected: connected,
+        remotePlayers: connected ? useGameStore.getState().remotePlayers : {},
+      })
+    })
+
+    realtime.connection.once('connected', () => {
+      void joinRoom(useGameStore.getState().currentRoom)
+    })
+
+    realtime.connection.on('failed', () => {
+      console.warn('[realtime] connection failed')
+      useGameStore.setState({ wsConnected: false, remotePlayers: {} })
+    })
+
     // ── Throttled position broadcast (~20 Hz) ───────────────────────────
-    let lastX = 0, lastZ = 0
-    const moveTimer = setInterval(() => {
-      if (ws.readyState !== WebSocket.OPEN) return
-      const { playerX, playerZ } = useGameStore.getState()
-      const dx = Math.abs(playerX - lastX)
-      const dz = Math.abs(playerZ - lastZ)
+    let lastX = 0
+    let lastZ = 0
+    const moveTimer = window.setInterval(() => {
+      const channel = channelRef.current
+      if (!channel) return
+
+      const state = useGameStore.getState()
+      const dx = Math.abs(state.playerX - lastX)
+      const dz = Math.abs(state.playerZ - lastZ)
       if (dx < MOVE_THRESHOLD && dz < MOVE_THRESHOLD) return
-      lastX = playerX;  lastZ = playerZ
-      ws.send(JSON.stringify({ type: 'move', x: playerX, z: playerZ }))
+
+      lastX = state.playerX
+      lastZ = state.playerZ
+
+      void channel.publish('move', {
+        id: clientId,
+        x: state.playerX,
+        z: state.playerZ,
+      })
+      void channel.presence.update(buildSelfPresence())
     }, 1000 / MOVE_HZ)
 
     // ── React to store changes ───────────────────────────────────────────
     const unsub = useGameStore.subscribe((state, prev) => {
-      if (ws.readyState !== WebSocket.OPEN) return
+      const channel = channelRef.current
+      if (!channel) return
 
       if (state.currentRoom !== prev.currentRoom) {
-        ws.send(JSON.stringify({ type: 'change_room', room: state.currentRoom }))
+        void joinRoom(state.currentRoom)
+        return
       }
+
       if (state.playerChat && state.playerChat !== prev.playerChat) {
-        ws.send(JSON.stringify({ type: 'chat', message: state.playerChat }))
+        void channel.publish('chat', { id: clientId, message: state.playerChat })
       }
       if (state.playerEmote && state.playerEmote !== prev.playerEmote) {
-        ws.send(JSON.stringify({ type: 'emote', emote: state.playerEmote }))
-      }
-      if (state.playerColor !== prev.playerColor) {
-        ws.send(JSON.stringify({ type: 'color_change', color: state.playerColor }))
+        void channel.publish('emote', { id: clientId, emote: state.playerEmote })
       }
       if (
+        state.playerName    !== prev.playerName    ||
+        state.playerColor   !== prev.playerColor   ||
         state.playerHat     !== prev.playerHat     ||
         state.playerVehicle !== prev.playerVehicle ||
         state.playerAvatar  !== prev.playerAvatar  ||
         state.githubLevel   !== prev.githubLevel
       ) {
-        ws.send(JSON.stringify({
-          type:    'equip',
-          hat:     state.playerHat,
-          vehicle: state.playerVehicle,
-          avatar:  state.playerAvatar,
-          level:   state.githubLevel,
-        }))
+        void channel.presence.update(buildSelfPresence())
       }
     })
 
     return () => {
-      clearInterval(moveTimer)
+      window.clearInterval(moveTimer)
       unsub()
-      ws.close()
+      void leaveCurrentRoom()
+      realtime.close()
     }
   }, [])
 }
