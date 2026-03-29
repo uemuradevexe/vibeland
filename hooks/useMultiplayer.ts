@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { useGameStore } from '@/store/gameStore'
 import type { RemotePlayer } from '@/store/gameStore'
+import type { PlacedFurniture } from '@/lib/furniture'
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:3001'
 const MOVE_HZ = 20        // position broadcast frequency
@@ -24,6 +25,8 @@ export function useMultiplayer() {
       switch (msg.type) {
         // Server assigned us an ID — now introduce ourselves
         case 'welcome': {
+          const localPlayerId = String(msg.id)
+          store.setLocalPlayerId(localPlayerId)
           ws.send(JSON.stringify({
             type:    'join',
             name:    store.playerName  || 'Anon',
@@ -33,6 +36,9 @@ export function useMultiplayer() {
             avatar:  store.playerAvatar,
             level:   store.githubLevel,
             room:    store.currentRoom,
+            houseOwnerId: store.currentRoom === 'house'
+              ? (store.viewingHouseOwnerId || localPlayerId)
+              : undefined,
           }))
           break
         }
@@ -41,6 +47,12 @@ export function useMultiplayer() {
         case 'room_state': {
           const players = msg.players as RemotePlayer[]
           store.setRemotePlayers(players)
+          if (
+            store.currentRoom === 'house' &&
+            (!store.viewingHouseOwnerId || store.viewingHouseOwnerId === store.localPlayerId)
+          ) {
+            ws.send(JSON.stringify({ type: 'house_state', items: store.houseItems }))
+          }
           // Track seen players for social_butterfly achievement
           for (const p of players) {
             store.trackStat('seenPlayers', p.id)
@@ -52,6 +64,13 @@ export function useMultiplayer() {
           const p = msg.player as RemotePlayer
           store.upsertRemotePlayer(p)
           store.trackStat('seenPlayers', p.id)
+          if (
+            store.currentRoom === 'house' &&
+            (!store.viewingHouseOwnerId || store.viewingHouseOwnerId === store.localPlayerId) &&
+            p.houseOwnerId === store.localPlayerId
+          ) {
+            ws.send(JSON.stringify({ type: 'house_state', items: store.houseItems }))
+          }
           break
         }
 
@@ -83,6 +102,12 @@ export function useMultiplayer() {
           break
         }
 
+        case 'house_state':
+          if (typeof msg.ownerId === 'string' && Array.isArray(msg.items)) {
+            store.setVisitedHouseItems(String(msg.ownerId), msg.items as PlacedFurniture[])
+          }
+          break
+
         case 'player_left':
           store.removeRemotePlayer(String(msg.id))
           break
@@ -112,8 +137,19 @@ export function useMultiplayer() {
     const unsub = useGameStore.subscribe((state, prev) => {
       if (ws.readyState !== WebSocket.OPEN) return
 
-      if (state.currentRoom !== prev.currentRoom) {
-        ws.send(JSON.stringify({ type: 'change_room', room: state.currentRoom }))
+      const stateHouseOwnerId = state.currentRoom === 'house'
+        ? (state.viewingHouseOwnerId || state.localPlayerId || null)
+        : null
+      const prevHouseOwnerId = prev.currentRoom === 'house'
+        ? (prev.viewingHouseOwnerId || prev.localPlayerId || null)
+        : null
+
+      if (state.currentRoom !== prev.currentRoom || stateHouseOwnerId !== prevHouseOwnerId) {
+        ws.send(JSON.stringify({
+          type: 'change_room',
+          room: state.currentRoom,
+          houseOwnerId: stateHouseOwnerId || undefined,
+        }))
       }
       if (state.playerChat && state.playerChat !== prev.playerChat) {
         ws.send(JSON.stringify({ type: 'chat', message: state.playerChat }))
@@ -137,6 +173,14 @@ export function useMultiplayer() {
           avatar:  state.playerAvatar,
           level:   state.githubLevel,
         }))
+      }
+
+      if (
+        state.currentRoom === 'house' &&
+        (!state.viewingHouseOwnerId || state.viewingHouseOwnerId === state.localPlayerId) &&
+        state.houseItems !== prev.houseItems
+      ) {
+        ws.send(JSON.stringify({ type: 'house_state', items: state.houseItems }))
       }
     })
 

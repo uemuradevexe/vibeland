@@ -2,20 +2,7 @@ import { WebSocketServer, WebSocket } from 'ws'
 import { randomUUID } from 'crypto'
 import { IncomingMessage } from 'http'
 
-type RoomId = 'plaza' | 'cafe' | 'beach' | 'library' | 'arcade' | 'garden'
-
-const VALID_ROOMS = new Set<RoomId>(['plaza', 'cafe', 'beach', 'library', 'arcade', 'garden'])
-const POSITION_BOUND = 17   // matches client KeyboardInput ±17 limit
-
-function validRoom(v: unknown): RoomId {
-  return VALID_ROOMS.has(v as RoomId) ? (v as RoomId) : 'plaza'
-}
-
-function clampPos(v: unknown): number {
-  const n = Number(v)
-  if (!isFinite(n)) return 0
-  return Math.max(-POSITION_BOUND, Math.min(POSITION_BOUND, n))
-}
+type RoomId = 'plaza' | 'cafe' | 'beach' | 'library' | 'arcade' | 'garden' | 'house'
 
 interface PlayerState {
   id: string
@@ -28,6 +15,7 @@ interface PlayerState {
   x: number
   z: number
   room: RoomId
+  houseOwnerId: string | null
   chat: string | null
   emote: string | null
 }
@@ -98,10 +86,18 @@ function send(ws: WebSocket, data: object) {
   if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(data))
 }
 
-function broadcastToRoom(room: RoomId, data: object, exclude?: WebSocket) {
+function broadcastToRoom(room: RoomId, data: object, exclude?: WebSocket, houseOwnerId?: string | null) {
   for (const [ws, p] of players) {
-    if (ws !== exclude && p.room === room) send(ws, data)
+    if (ws === exclude || p.room !== room) continue
+    if (room === 'house' && p.houseOwnerId !== (houseOwnerId ?? null)) continue
+    send(ws, data)
   }
+}
+
+function resolveHouseOwnerId(room: RoomId, raw: unknown, fallbackId: string) {
+  if (room !== 'house') return null
+  const value = String(raw || '').trim()
+  return value || fallbackId
 }
 
 // ── Heartbeat: detect and terminate dead connections ─────────────────────────
@@ -164,15 +160,20 @@ wss.on('connection', (ws, req) => {
         avatar:  validAvatar(msg.avatar),
         level:   Math.max(1, Math.min(10, Number(msg.level) || 1)),
         x: 0, z: 0,
-        room:  validRoom(msg.room),
+        room:  (msg.room as RoomId) || 'plaza',
+        houseOwnerId: resolveHouseOwnerId((msg.room as RoomId) || 'plaza', msg.houseOwnerId, id),
         chat:  null,
         emote: null,
       }
       players.set(ws, state)
 
-      const roomSnapshot = [...players.values()].filter(p => p.id !== id && p.room === state.room)
+      const roomSnapshot = [...players.values()].filter((p) =>
+        p.id !== id &&
+        p.room === state.room &&
+        (state.room !== 'house' || p.houseOwnerId === state.houseOwnerId)
+      )
       send(ws, { type: 'room_state', players: roomSnapshot })
-      broadcastToRoom(state.room, { type: 'player_joined', player: state }, ws)
+      broadcastToRoom(state.room, { type: 'player_joined', player: state }, ws, state.houseOwnerId)
       console.log(`[join] ${id} "${state.name}" → ${state.room}`)
       return
     }
@@ -182,9 +183,9 @@ wss.on('connection', (ws, req) => {
     switch (msg.type) {
       // ── move ────────────────────────────────────────────────────────────
       case 'move':
-        player.x = clampPos(msg.x)
-        player.z = clampPos(msg.z)
-        broadcastToRoom(player.room, { type: 'player_moved', id, x: player.x, z: player.z, room: player.room }, ws)
+        player.x = Number(msg.x) || 0
+        player.z = Number(msg.z) || 0
+        broadcastToRoom(player.room, { type: 'player_moved', id, x: player.x, z: player.z, room: player.room }, ws, player.houseOwnerId)
         break
 
       // ── chat ────────────────────────────────────────────────────────────
@@ -192,7 +193,7 @@ wss.on('connection', (ws, req) => {
         const message = String(msg.message || '').trim().slice(0, 120)
         if (!message) break
         player.chat = message
-        broadcastToRoom(player.room, { type: 'player_chat', id, message }, ws)
+        broadcastToRoom(player.room, { type: 'player_chat', id, message }, ws, player.houseOwnerId)
         break
       }
 
@@ -200,7 +201,7 @@ wss.on('connection', (ws, req) => {
       case 'emote': {
         const emote = String(msg.emote || '').slice(0, 12)
         player.emote = emote
-        broadcastToRoom(player.room, { type: 'player_emote', id, emote }, ws)
+        broadcastToRoom(player.room, { type: 'player_emote', id, emote }, ws, player.houseOwnerId)
         break
       }
 
@@ -208,7 +209,7 @@ wss.on('connection', (ws, req) => {
       case 'color_change': {
         const color = validColor(msg.color)
         player.color = color
-        broadcastToRoom(player.room, { type: 'player_color_changed', id, color }, ws)
+        broadcastToRoom(player.room, { type: 'player_color_changed', id, color }, ws, player.houseOwnerId)
         break
       }
 
@@ -225,25 +226,41 @@ wss.on('connection', (ws, req) => {
           vehicle: player.vehicle,
           avatar: player.avatar,
           level: player.level,
-        }, ws)
+        }, ws, player.houseOwnerId)
+        break
+      }
+
+      case 'house_state': {
+        if (player.room !== 'house') break
+        broadcastToRoom(player.room, {
+          type: 'house_state',
+          ownerId: player.id,
+          items: Array.isArray(msg.items) ? msg.items : [],
+        }, ws, player.houseOwnerId)
         break
       }
 
       // ── change_room ──────────────────────────────────────────────────────
       case 'change_room': {
         const oldRoom = player.room
-        const newRoom = validRoom(msg.room)
-        broadcastToRoom(oldRoom, { type: 'player_left', id }, ws)
+        const newRoom = (msg.room as RoomId) || 'plaza'
+        const oldHouseOwnerId = player.houseOwnerId
+        broadcastToRoom(oldRoom, { type: 'player_left', id }, ws, oldHouseOwnerId)
 
         player.room  = newRoom
+        player.houseOwnerId = resolveHouseOwnerId(newRoom, msg.houseOwnerId, id)
         player.x     = 0
         player.z     = 0
         player.chat  = null
         player.emote = null
 
-        const roomSnapshot = [...players.values()].filter(p => p.id !== id && p.room === newRoom)
+        const roomSnapshot = [...players.values()].filter((p) =>
+          p.id !== id &&
+          p.room === newRoom &&
+          (newRoom !== 'house' || p.houseOwnerId === player.houseOwnerId)
+        )
         send(ws, { type: 'room_state', players: roomSnapshot })
-        broadcastToRoom(newRoom, { type: 'player_joined', player: { ...player } }, ws)
+        broadcastToRoom(newRoom, { type: 'player_joined', player: { ...player } }, ws, player.houseOwnerId)
         console.log(`[room] ${id} "${player.name}"  ${oldRoom} → ${newRoom}`)
         break
       }
@@ -253,7 +270,7 @@ wss.on('connection', (ws, req) => {
   ws.on('close', () => {
     const p = players.get(ws)
     if (p) {
-      broadcastToRoom(p.room, { type: 'player_left', id: p.id })
+      broadcastToRoom(p.room, { type: 'player_left', id: p.id }, ws, p.houseOwnerId)
       console.log(`[-] ${p.id} "${p.name}" disconnected  (total: ${wss.clients.size - 1})`)
     }
     players.delete(ws)

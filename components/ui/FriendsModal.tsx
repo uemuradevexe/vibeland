@@ -10,6 +10,7 @@ export default function FriendsModal({ onClose }: Props) {
   const friends = useGameStore((s) => s.friends)
   const remotePlayers = useGameStore((s) => s.remotePlayers)
   const changeRoom = useGameStore((s) => s.changeRoom)
+  const visitHouse = useGameStore((s) => s.visitHouse)
   const removeFriend = useGameStore((s) => s.removeFriend)
 
   const entries = friends
@@ -19,7 +20,13 @@ export default function FriendsModal({ onClose }: Props) {
   function handleVisit(friendId: string) {
     const remote = remotePlayers[friendId]
     if (!remote) return
-    changeRoom(remote.room)
+    if (remote.room === 'house') visitHouse(friendId)
+    else changeRoom(remote.room)
+    onClose()
+  }
+
+  function handleVisitHouse(friendId: string) {
+    visitHouse(friendId)
     onClose()
   }
 
@@ -75,6 +82,13 @@ export default function FriendsModal({ onClose }: Props) {
                   className="bg-[#1e3a8a] hover:bg-[#2a4a9a] disabled:bg-[#1a2744] disabled:text-[#4c6488] disabled:border-[#243754] border border-[#3d6db5] rounded-lg px-3 py-2 text-xs font-mono font-bold transition-colors"
                 >
                   Visit
+                </button>
+                <button
+                  onClick={() => handleVisitHouse(friend.id)}
+                  disabled={!remote || remote.room !== 'house'}
+                  className="bg-[#2f4f1f] hover:bg-[#3b6326] disabled:bg-[#1a2744] disabled:text-[#4c6488] disabled:border-[#243754] border border-[#5b9d45] rounded-lg px-3 py-2 text-xs font-mono font-bold transition-colors"
+                >
+                  House
                 </button>
                 <button
                   onClick={() => removeFriend(friend.id)}

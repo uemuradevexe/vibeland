@@ -44,26 +44,12 @@ export const NPC_PHRASES: Record<RoomId, string[]> = {
     'Natureza + tokens = perfeição 🌿',
     'Treino ao ar livre é o melhor! 🌞',
   ],
-  rooftop: [
-    'A vista daqui é de 100B parâmetros! 🏙️',
-    'Neon lights e gradient descent ✨',
-    'O skyline parece um tensor reshape 🌃',
-    'Vento forte... atenção redistribuída! 💨',
-    'Rooftop debugging é outro nível 🔭',
-  ],
-  dungeon: [
-    'Esses gradientes estão sombrios... 🕯️',
-    'Encontrei um tesouro de dados! 💰',
-    'Cuidado com o overfitting das masmorras 🦇',
-    'Tochas iluminando os hidden layers 🔥',
-    'Dungeon crawling com backpropagation 💀',
-  ],
-  space: [
-    'Houston, temos um NaN! 🚀',
-    'Treinando no vácuo do espaço sideral 🌌',
-    'O reator funciona com attention heads ⚛️',
-    'Zero gravity, zero loss! 🛸',
-    'Embeddings estelares detectados 🌟',
+  house: [
+    'Lar doce prompt 🏠',
+    'Organizando meus móveis em tokens.',
+    'Essa sala ficou com ótimo contexto.',
+    'Modo decoração ativado ✨',
+    'Casa nova, vibes novas.',
   ],
 }
 

@@ -9,6 +9,7 @@ import ProfileModal from '@/components/ui/ProfileModal'
 import BeachMinigame from '@/components/game/BeachMinigame'
 import AchievementsModal from '@/components/ui/AchievementsModal'
 import FriendsModal from '@/components/ui/FriendsModal'
+import FurnitureShopModal from '@/components/ui/FurnitureShopModal'
 import { getLevel } from '@/lib/githubLevel'
 import { ACHIEVEMENTS } from '@/lib/achievements'
 import { isMuted, playChat, playEmote, playRoomChange, toggleMute } from '@/lib/sounds'
@@ -27,6 +28,7 @@ export default function HUD() {
   const [showProfile, setShowProfile] = useState(false)
   const [showMinigame, setShowMinigame] = useState(false)
   const [showFriends, setShowFriends] = useState(false)
+  const [showFurnitureShop, setShowFurnitureShop] = useState(false)
   const [showDailyToast, setShowDailyToast] = useState(false)
   const [showOnlineToast, setShowOnlineToast] = useState(false)
   const [showAchievements, setShowAchievements] = useState(false)
@@ -43,6 +45,11 @@ export default function HUD() {
   const setPlayerColor = useGameStore((s) => s.setPlayerColor)
   const currentRoom    = useGameStore((s) => s.currentRoom)
   const changeRoom     = useGameStore((s) => s.changeRoom)
+  const enterOwnHouse  = useGameStore((s) => s.enterOwnHouse)
+  const houseEditMode  = useGameStore((s) => s.houseEditMode)
+  const setHouseEditMode = useGameStore((s) => s.setHouseEditMode)
+  const viewingHouseOwnerId = useGameStore((s) => s.viewingHouseOwnerId)
+  const localPlayerId = useGameStore((s) => s.localPlayerId)
   const playerName          = useGameStore((s) => s.playerName)
   const tokens              = useGameStore((s) => s.tokens)
   const dailyBonusPending   = useGameStore((s) => s.dailyBonusPending)
@@ -56,11 +63,8 @@ export default function HUD() {
   const setGithubLevel      = useGameStore((s) => s.setGithubLevel)
   const pendingAchievement  = useGameStore((s) => s.pendingAchievement)
   const dismissAchievement  = useGameStore((s) => s.dismissAchievement)
-
-  // Cleanup chat cooldown timer on unmount
-  useEffect(() => {
-    return () => { if (cooldownRef.current) clearTimeout(cooldownRef.current) }
-  }, [])
+  const onlineCount         = Object.keys(remotePlayers).length + 1
+  const isOwnHouse = currentRoom === 'house' && (!viewingHouseOwnerId || viewingHouseOwnerId === localPlayerId)
 
   // Daily bonus toast
   useEffect(() => {
@@ -147,7 +151,8 @@ export default function HUD() {
   }
 
   function handleChangeRoom(roomId: Parameters<typeof changeRoom>[0]) {
-    changeRoom(roomId)
+    if (roomId === 'house') enterOwnHouse()
+    else changeRoom(roomId)
     playRoomChange()
     setShowMap(false)
   }
@@ -169,6 +174,16 @@ export default function HUD() {
           </span>
         </button>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              enterOwnHouse()
+              playRoomChange()
+            }}
+            className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-3 py-1.5 font-mono text-sm text-[#7a9cc8] backdrop-blur-sm hover:bg-[#1a2744cc] transition-colors"
+            title="Go to your house"
+          >
+            🏠
+          </button>
           <button
             onClick={handleMute}
             className="bg-[#111e38cc] border border-[#2a4a7f] rounded-full px-3 py-1.5 font-mono text-sm text-[#7a9cc8] backdrop-blur-sm hover:bg-[#1a2744cc] transition-colors"
@@ -254,6 +269,9 @@ export default function HUD() {
 
       {/* Friends modal */}
       {showFriends && <FriendsModal onClose={() => setShowFriends(false)} />}
+
+      {/* Furniture shop */}
+      {showFurnitureShop && <FurnitureShopModal onClose={() => setShowFurnitureShop(false)} />}
 
       {/* GitHub connect modal */}
       {showGithubModal && (
@@ -403,6 +421,25 @@ export default function HUD() {
         >
           👥
         </button>
+
+        {currentRoom === 'house' && isOwnHouse && (
+          <>
+            <button
+              onClick={() => setHouseEditMode(!houseEditMode)}
+              className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0"
+              title={houseEditMode ? 'Stop editing' : 'Edit house'}
+            >
+              {houseEditMode ? '✅' : '✏️'}
+            </button>
+            <button
+              onClick={() => setShowFurnitureShop(true)}
+              className="bg-[#1a2744] border-2 border-[#2a4a7f] rounded-xl p-3 text-xl hover:bg-[#243060] transition-colors flex-shrink-0"
+              title="Furniture shop"
+            >
+              🛋️
+            </button>
+          </>
+        )}
 
         {/* Map button */}
         <button
