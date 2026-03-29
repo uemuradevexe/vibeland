@@ -70,6 +70,14 @@ export interface GameState {
   gameStats: GameStats
   pendingAchievement: AchievementId | null
 
+  // House
+  houseItems: PlacedFurniture[]
+  houseEditMode: boolean
+  addFurniture: (type: FurnitureId, x: number, z: number) => void
+  removeFurniture: (id: string) => void
+  rotateFurniture: (id: string) => void
+  setHouseEditMode: (enabled: boolean) => void
+
   // World
   currentRoom: RoomId
 
@@ -129,7 +137,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   inventory: ['none'],
   dailyBonusPending: 0,
   onlineRewardPending: 0,
-  friends: [],
+  houseItems: [],
+  houseEditMode: false,
   githubUsername: '',
   githubLevel: 1,
   githubContributions: 0,
@@ -194,6 +203,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       playerEmote: null,
       remotePlayers: {},
       gameStats: newStats,
+      houseEditMode: false,
     })
     get().checkAchievements()
   },
@@ -317,9 +327,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (bonus > 0) saveTokens(finalTokens)
     const equipped = loadEquipped()
     const inventory = loadInventory()
-    const friends = loadFriends()
     const achievements = loadAchievements()
     const gameStats = loadStats()
+    const friends = loadFriends()
 
     // Track login count
     const newStats: GameStats = { ...gameStats, loginCount: gameStats.loginCount + 1 }
@@ -348,6 +358,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       githubUsername: githubData?.username ?? '',
       githubLevel: githubData?.level ?? 1,
       githubContributions: githubData?.contributions ?? 0,
+      houseItems: loadHouseItems(),
     })
 
     get().checkAchievements()
@@ -355,20 +366,40 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   dismissDailyBonus: () => set({ dailyBonusPending: 0 }),
   dismissOnlineReward: () => set({ onlineRewardPending: 0 }),
-
   addFriend: (friend) => set((state) => {
-    const friends = state.friends.some((entry) => entry.id === friend.id)
-      ? state.friends.map((entry) => entry.id === friend.id ? friend : entry)
-      : [...state.friends, friend]
+    if (state.friends.some((existing) => existing.id === friend.id)) return state
+    const friends = [...state.friends, friend]
     saveFriends(friends)
     return { friends }
   }),
-
   removeFriend: (id) => set((state) => {
     const friends = state.friends.filter((friend) => friend.id !== id)
     saveFriends(friends)
     return { friends }
   }),
+
+  // ── House ────────────────────────────────────────────────────────────
+  addFurniture: (type, x, z) => {
+    const items = [
+      ...get().houseItems,
+      { id: crypto.randomUUID(), type, x, z, rotation: 0 },
+    ]
+    saveHouseItems(items)
+    set({ houseItems: items })
+  },
+  removeFurniture: (id) => {
+    const items = get().houseItems.filter((i) => i.id !== id)
+    saveHouseItems(items)
+    set({ houseItems: items })
+  },
+  rotateFurniture: (id) => {
+    const items = get().houseItems.map((i) =>
+      i.id === id ? { ...i, rotation: (i.rotation + Math.PI / 2) % (Math.PI * 2) } : i,
+    )
+    saveHouseItems(items)
+    set({ houseItems: items })
+  },
+  setHouseEditMode: (enabled) => set({ houseEditMode: enabled }),
 
   // ── GitHub level ────────────────────────────────────────────────────
   setGithubLevel: (username, level, contributions) => {
